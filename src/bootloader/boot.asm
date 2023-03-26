@@ -1,12 +1,17 @@
 org 0x7C00
 bits 16
 
+%define ENDL 0x0D, 0x0A
+
 ;
 ; FAT12 header
 ;
-jmp _start
+jmp start
 nop
 
+; ==================== ;
+;      BOOT RECORD     ;
+; ==================== ;
 ; boot record
 bdb_oem:					db 'MWSIN4.1'
 bdb_byte_per_sector:		dw 512
@@ -15,7 +20,7 @@ bdb_reserved_sector:		dw 1
 bdb_fat_count:				db 2
 bdb_dir_entries_count:		dw 0x0E0
 bdb_total_sectors:			dw 2880 
-bdb_media_descriptor_type:	db 0xF0						; F0 = 3.5" floppy disk
+bdb_media_descriptor_type:	db 0xF0				; F0 = 3.5" floppy disk
 bdb_sectors_per_fat:		dw 9
 bdb_sectors_per_track:		dw 18
 bdb_heads:					dw 2
@@ -24,20 +29,17 @@ bdb_large_sectors_count:	dd 0
 
 ; Extended boot record
 ebr_drive_number:			db 0
-							db 0 						; reserved
+							db 0 			 	; reserved
 ebr_signature:				db 0x29
-ebr_volume_id:				db 0x00, 0x00, 0x00, 0x00	; serial number
-ebr_volume_label:			db 'AMETHYSTOS '			; 11 B
-ebr_system_id:				db 'FAT12   '				; 8 B
+ebr_volume_id:				dw 0x0000, 0x0000	; serial number
+ebr_volume_label:			db 'AMETHYSTOS '	; 11 B
+ebr_system_id:				db 'FAT12   '		; 8 B
 
+; ==================== ;
+;    IMPLEMENTATION    ;
+; ==================== ;
 
-;
-; Bootloader
-;
-
-%define ENDL 0x0D, 0x0A
-
-_start:
+start:
 	; Setup data segment
 	mov ax, 0 		; Can't write directly in DS/ES
 	mov ds, ax		; Set DS, 0
@@ -47,39 +49,150 @@ _start:
 	mov ss, ax		; Set stack to 0
 	mov sp, 0 		; Set stack point to start point
 
+	push es
+	push word .after
+	retf
+
+.after:
+	; Read something from floppy
+	; BIOS should set DL to drive number
 	mov [ebr_drive_number], dl
-	mov ax, 1
-	mov cl, 1
-	mov bx, 0x7E00
+
+	mov si, msg_loading
+	call puts
+
+	; Read drive parameters instead of relying on
+	; data on formatted disk
+	push es
+	mov ah, 0x08 
+	int 0x13
+	jc floppy_error
+	pop es
+
+	and cl, 0x3F 					; Remove top 2 bits
+	xor ch, ch 						; CH = 0
+	mov [bdb_sectors_per_track], cx ; Sector count
+
+	inc dh
+	mov [bdb_heads], dh 			; Head count
+
+	; Compute LDBA of root directory
+	;   = reserved + fats * sectors_per_fat
+	mov ax, [bdb_sectors_per_fat]	; Compute LBA of root directory
+									;   reserved + fats * sectors_per_fat
+	mov bl, [bdb_fat_count]
+	xor bh, bh
+	mul bx 							; DX:AX = (fat * sectors_per_fat)
+	add ax, [bdb_reserved_sector] 	; ax = LDA of root directory
+	push ax
+
+	; Compute size of root directory
+	;   = (32 * number_of_entries) / bytes_per_sector
+	mov ax, [bdb_sectors_per_fat]
+	shl ax, 5 						; AX *= 32
+	xor dx, dx 						; DX = 0
+	div word [bdb_byte_per_sector]  ; Number of sectord we need to read
+
+	test dx, dx 					; if DX != 0, add 1
+	jz .root_dir_after
+	inc ax 							; division remainder != 0, add 1
+
+.root_dir_after:
+	mov cl, al 						; Number of sectors to read = size of root directory
+	pop ax 							; AX = LBA of root directory
+	mov dl, [ebr_drive_number]	 	; DL = Drive number 
+	mov bx, buffer 					; es:bx = buffer
+	call disk_read
+	; Search for kerel.bin
+	xor bx, bx
+	mov di, buffer
+
+.search_kernel:
+	mov si, file_kernel_bin
+	mov cx, 11
+	push di
+	repe cmpsb 
+	pop di
+	je .found_kernel
+
+	add di, 32
+	inc bx
+	cmp bx, [bdb_dir_entries_count]
+	jl .search_kernel
+	jmp kernel_not_found_error
+
+.found_kernel:
+	; DI should have the address of the entry
+	mov ax, [di + 26]
+	mov [kernel_cluster], ax
+
+	; load FAT from disk in memory
+	mov ax, [bdb_reserved_sector]
+	mov bx, buffer
+	mov cl, [bdb_sectors_per_fat]
+	mov dl, [ebr_drive_number]
 	call disk_read
 
-	; Print HELLO message
-	mov si, msg_hello 	; Load message
-	call puts		; Print the message
+	; read kernel and process FAT chain
+	mov bx, KERNEL_LOAD_SEGMENT
+	mov es, bx
+	mov bx, KERNEL_LOAD_OFFSET
 
-.main_loop: 		; Program main loop
-	call getc		; Get keyboard key
-	call putc		; Print the key
-	jmp .main_loop	; Loop back
+.load_kernel_loop:
+	mov ax, [kernel_cluster]
+	add ax, 31 				; first cluster = (kernel_cluster_number -2) * sectors_per_cluster + + cluster_number
+	
+	mov cl, 1
+	mov dl, [ebr_drive_number]
+	call disk_read
 
+	add bx, [bdb_byte_per_sector]
 
-; Get the pressed key
-; OUT AH: The Scancode of the key pressed down
-; OUT AL: The ASCII character og the key
-getc:
-	mov ah, 0x00	; Read press key service
-	int 0x16		; Interrupt
-	ret
+	; compute location of next cluster
+	mov ax, [kernel_cluster]
+	mov cx, 3
+	mul cx
+	mov cx, 2
+	div cx
 
+	mov si, buffer
+	add si, ax
+	mov ax, [ds:si]
+	or dx, dx
+	jz .even
 
-; Print a char in the TTY screen
-; IN  AL the char
-putc:
-	push ax			; Save AX
-	mov ah, 0x0E 	; Service print TTY
-	int 0x10 		; Interrupt video
-	pop ax 			; Restore AX
-	ret
+.odd:
+	shr ax, 4
+	jmp .next_cluster_after
+.even:
+	and ax, 0x0FFF
+.next_cluster_after:
+	cmp ax, 0x0FF8
+	jae .read_finish
+	mov [kernel_cluster], ax 
+	jmp .load_kernel_loop
+
+.read_finish:
+	mov dl, [ebr_drive_number]
+	mov ax, KERNEL_LOAD_SEGMENT
+	mov ds, ax
+	mov es, ax
+
+	jmp KERNEL_LOAD_SEGMENT:KERNEL_LOAD_OFFSET
+
+	jmp wait_key_and_reboot
+
+	cli
+	hlt
+
+; ==================== ;
+
+kernel_not_found_error:
+	mov si, msg_kernel_not_found
+	call puts
+	jmp wait_key_and_reboot
+
+; ==================== ;
 
 ; Print a string in the TTY screen
 ; IN  SI: The address
@@ -101,45 +214,23 @@ puts:
 	pop si 			; Restore SI
 	ret
 
-; Print hexadecimal byte
-; IN  AL: The byte
-putx:
-	push ax 		; Save AX
-	shr al, 4 		; Get 4 upper bits
-	call putlx 		; Print the upper bits
-	pop ax 			; Restore AX
-	call putlx 		; Print the lower bits
-	ret
+; ==================== ;
 
-; Print hexadecimal value
-; IN  AL[bytes 0-3]: The value
-putlx:
-	push ax 			; Save AX
-
-	and al, 0x0F 		; Zero 4 upper bits
-	cmp al, 0x09 		; Compare to 9
-	jg .greater 		; Goto print for greater than 9
-	add al, '0' 		; AL + '0' = The numeric
-	jmp .end 			; Print and done
-.greater:
-	add al, 'A' - 0x0A 	; AL + 'A'-0xA = The alphanumeric
-.end
-	mov ah, 0x0E 		; Display,
-	int 0x10 			;   TTY
-
-	pop ax 				; Restore AX
-	ret
-
+; Wait key input and reboot the OS
 wait_key_and_reboot:
-	mov ah, 0
-	int 0x16
-	jmp 0xFFFF:0
+	mov ah, 0 			; Mode get key input
+	int 0x16 			; Interrupt keyboard
+	jmp 0xFFFF:0 		; Jump to BIOS start
 
+; ==================== ;
+
+; Print the floppy error and reboot
 floppy_error:
-	mov si, msg_floppy_error
-	call puts
-	jmp wait_key_and_reboot
+	mov si, msg_floppy_error 	; Load the error message
+	call puts 					; Print error message
+	jmp wait_key_and_reboot 	; reboot
 
+; ==================== ;
 
 ; Convert an LBA addr to a CHS addr
 ; IN  AX LDA address
@@ -169,6 +260,8 @@ lba_to_chs:
 	mov dl, al
 	pop ax 								; restore ax
 	ret
+
+; ==================== ;
 
 ; Read sectors from disk
 ; IN  AX: LBA addr
@@ -215,6 +308,7 @@ disk_read:
 
 	ret
 
+; ==================== ;
 
 ; Reset disk controller
 ; IN  DI: Drive number
@@ -226,13 +320,20 @@ disk_reset:
 	popa 				; Restore registers
 	ret
 
+; ==================== ;
+;         DATA         ;
+; ==================== ;
 
+msg_loading:			db 'Loading...', ENDL, 0
+msg_floppy_error: 		db 'E: Read floppy', ENDL, 0
+msg_kernel_not_found: 	db 'E: kernel not found', ENDL, 0
+file_kernel_bin: 		db 'KERNEL  BIN'
+kernel_cluster: 		dw 0
 
-
-
-msg_hello: db 'Welcome to the AmethystOS Bootloader', ENDL, 0
-msg_floppy_error: db 'Fail to read floppy!', ENDL, 0
-
+KERNEL_LOAD_SEGMENT 	equ 0x2000
+KERNEL_LOAD_OFFSET		equ 0
 
 times 510 - ($ - $$) db 0
 db 0x55, 0xAA
+
+buffer:

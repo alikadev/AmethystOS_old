@@ -8,7 +8,7 @@ I do it because I always liked to developpe in Low Level and I really wanted to 
 
 # Current status
 
-For the moment, it will boot in the bootloader. You can press key, it will print it on the screen. 
+For the moment, it will load the kernel and printa message.
 
 I know, this is the best thing that you ever seen!
 
