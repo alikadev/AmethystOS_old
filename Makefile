@@ -24,7 +24,6 @@ D_SRC_KERN	:=	$(D_SRC)/kernel
 #
 # BUILDING TOOLS
 # 
-ASM 		?= 	nasm
 MKFS_FAT	?=	mkfs.fat
 DD 			?=	dd
 MCOPY		?=	mcopy
@@ -33,19 +32,14 @@ MCOPY		?=	mcopy
 # FILES
 # 
 BOOTLOADER		:=	$(D_BUILD)/bootloader.bin
-BOOTLOADER_SRC	:=	$(shell find $(D_SRC_BOOT) -name '*.asm')
-
 KERNEL		:=	$(D_BUILD)/kernel.bin
-KERNEL_SRC	:=	$(shell find $(D_SRC_KERN) -name '*.asm')
-
-LINKER		?=	$(D_SRC)/linker.ld
 
 IMAGE_OUT	:= 	AmethystOS.img
 
 #
 # FLAGS
 # 
-ASMFLAGS	?=	-f bin
+ASMFLAGS	?=	-f bin -Wall
 LDFLAGS		?=	-T $(LINKER)
 
 #
@@ -53,10 +47,10 @@ LDFLAGS		?=	-T $(LINKER)
 #
 .PHONY: bootloader kernel image clean all
 
-all: clean image
-kernel: $(KERNEL)
-bootloader:	$(BOOTLOADER)
-image: $(IMAGE_OUT)
+all: always clean image
+kernel: always $(KERNEL)
+bootloader:	always $(BOOTLOADER)
+image: always $(IMAGE_OUT)
 clean: 
 	@rm -rf build/*
 	@rm -f $(KERNEL)
@@ -66,14 +60,12 @@ clean:
 #
 # BOOTLOADER
 $(BOOTLOADER) : $(BOOTLOADER_SRC)
-	@echo Building bootloader module
-	@$(ASM) $(ASMFLAGS) -o $@ $<
+	@$(MAKE) -C $(D_SRC)/bootloader all D_BUILD=$(abspath $(D_BUILD))
 
 #
 # KERNEL
 $(KERNEL) : $(KERNEL_SRC)
-	@echo Building kernel module
-	@$(ASM) $(ASMFLAGS) -o $@ $<
+	@$(MAKE) -C $(D_SRC)/kernel all D_BUILD=$(abspath $(D_BUILD))
 
 #
 # OUTPUT
@@ -86,3 +78,6 @@ $(IMAGE_OUT) : $(BOOTLOADER) $(KERNEL)
 	@$(DD) if=$(BOOTLOADER) of=$(IMAGE_OUT) conv=notrunc status=none
 	@echo Copying the kernel binary in the image
 	@$(MCOPY) -i $(IMAGE_OUT) $(KERNEL) "::kernel.bin"
+
+always:
+	@mkdir -p $(D_BUILD)
