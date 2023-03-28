@@ -14,7 +14,7 @@ I know, this is the best OS that you ever seen!
 
 It will be updated in next days!
 
-# Dependencies
+# Dependancies
 
 ```
 make, tcc, nasm, mtools, mkfs.fat, dd, ld, ...
