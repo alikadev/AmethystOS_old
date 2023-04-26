@@ -64,12 +64,12 @@ $(BOOT) : $(D_SRC_BOOT)
 $(IMAGE_OUT) : $(BOOT)
 	@echo Creating the image output
 	@$(DD) if=/dev/zero of=$(IMAGE_OUT) bs=512 count=2880 status=none
-#	@echo Adding fs to the image
-#	@$(MKFS_FAT) -F 12 -n "AMETHYSTOS" $(IMAGE_OUT)
+	@echo Adding fs to the image
+	@$(MKFS_FAT) -F 12 -n "AMETHYSTOS" $(IMAGE_OUT)
 	@echo Copying the bootloader in the image
 	@$(DD) if=$(BOOT) of=$(IMAGE_OUT) conv=notrunc status=none
 #	@echo Adding files in the image disk
-#	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::test.txt"
+#	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::stage2.bin"
 
 always:
 	@mkdir -p $(D_BUILD)
