@@ -43,7 +43,7 @@ LDFLAGS		?=	-T $(LINKER)
 #
 # IMPLEMENTATION
 #
-.PHONY: bootloader kernel image clean all
+.PHONY: bootloader kernel image clean all install
 
 all: always clean image
 bootloader:	always $(BOOT)
@@ -68,8 +68,13 @@ $(IMAGE_OUT) : $(BOOT)
 	@$(MKFS_FAT) -F 12 -n "AMETHYSTOS" $(IMAGE_OUT)
 	@echo Copying the bootloader in the image
 	@$(DD) if=$(BOOT) of=$(IMAGE_OUT) conv=notrunc status=none
-#	@echo Adding files in the image disk
-#	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::stage2.bin"
+	@echo Adding files in the image disk
+	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::test1.txt"
+	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::test2.txt"
+	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::test3.txt"
+	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::test4.txt"
+
+install: $(DISK)
 
 always:
 	@mkdir -p $(D_BUILD)
