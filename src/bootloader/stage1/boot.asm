@@ -90,22 +90,33 @@ read_entries:
 	mov 	ax, 		19							; Get the LBA of the 
 	call 	lbachs 									; Get the CHS address
 	call 	read 									; Read the disk at the CHS address
-	mov  	si,			buffer 						; SI = ptr buffer (will skip entry)
-.print_entry:
-	add 	si,			32 							; Add 32 to SI (next entry)
-	mov 	bx,			[si] 						; BX = SI
-	cmp  	bx,			0 							; If BX = 0
-	je .end 										;   > End
-	call 	puts 									; Print the entry at SI (will draw bad chars)
-	mov  	ax,			0x0A 						; Print new line
-	call 	putc 									; ...
-	mov   	ah, 		0 							; Keyboard interrupt, read char
-	int 	0x16 									; Interrupt
-	jmp 	.print_entry 							; Loop back
-.end:
-	mov 	si,			s_finish 					; Print final string
+	mov  	di,			buffer						; DI is address of current entry name
+	xor  	bx,			bx 							; BX is count
+	; we will skip the first entry because it is the disk name
+.check_entries:
+ 	; Increment the counter
+	inc  	bx  									; Increment the number of element readed
+	add  	di,			32  						; Increment the entry pointer
+	; Check if we finish
+	cmp  	bx, 		[bpb_root_entry_count]		; Compare with number of entry
+	jge		.fail_found 							; If we check all, fail
+	; Compare with what we search
+	mov 	si, 		s_boots2 					; The file name to search
+	mov  	cx,			11							; Size of the string to compare (filename size)
+	push 	di 										; Save DI (will be modified)
+	repe 	cmpsb									; Compare the strings
+	pop 	di 										; Restore DI
+	je 		.load_boots2 							; If they are the same, we found it!
+	jmp 	.check_entries 							; Look back
+.fail_found:
+	mov 	si,			s_err_not_found				; Print error string
 	call  	puts 									; ...
 	halt_cpu 										; Halt CPU
+.load_boots2:
+	mov  	si,  		s_file_found
+	call 	puts
+	halt_cpu
+
 ;
 ; Read from disk
 ; IN  AL number of sector
@@ -195,6 +206,7 @@ puts:
 	pop 	ax 										; Restore AX
 	pop 	si 										; Restore SI
 	ret
+
 ;
 ; Print AX in hexadecimal
 ; Source: https://github.com/ApplePy/osdev/blob/master/bootsect.asm
@@ -220,9 +232,11 @@ puth:
 	popa
 	ret
 
-s_welcome: 			db "Booted", 0x0A, 0
+s_welcome: 			db "Booting...", 0x0A, 0
 s_err_disk_read: 	db "F:READ=", 0
-s_finish:			db "No more entry!", 0x0A, 0
+s_err_not_found:	db "F:NotFound", 0
+s_boots2:			db "BOOTS2  BIN"
+s_file_found: 		db "File is found"
 
 times 510 - ($ - $$) db 0
 db 0x55, 0xAA

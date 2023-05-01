@@ -69,10 +69,7 @@ $(IMAGE_OUT) : $(BOOT)
 	@echo Copying the bootloader in the image
 	@$(DD) if=$(BOOT) of=$(IMAGE_OUT) conv=notrunc status=none
 	@echo Adding files in the image disk
-	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::test1.txt"
-	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::test2.txt"
-	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::test3.txt"
-	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::test4.txt"
+	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::boots2.bin"
 
 install: $(DISK)
 
