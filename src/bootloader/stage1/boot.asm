@@ -94,9 +94,6 @@ read_entries:
 	xor  	bx,			bx 							; BX is count
 	; we will skip the first entry because it is the disk name
 .check_entries:
- 	; Increment the counter
-	inc  	bx  									; Increment the number of element readed
-	add  	di,			32  						; Increment the entry pointer
 	; Check if we finish
 	cmp  	bx, 		[bpb_root_entry_count]		; Compare with number of entry
 	jge		.fail_found 							; If we check all, fail
@@ -107,6 +104,9 @@ read_entries:
 	repe 	cmpsb									; Compare the strings
 	pop 	di 										; Restore DI
 	je 		.load_boots2 							; If they are the same, we found it!
+ 	; Increment the counter
+	inc  	bx  									; Increment the number of element readed
+	add  	di,			32  						; Increment the entry pointer
 	jmp 	.check_entries 							; Look back
 .fail_found:
 	mov 	si,			s_err_not_found				; Print error string
