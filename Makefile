@@ -14,11 +14,13 @@ MAKEFLAGS += --no-print-directory
 #
 # DIRECTORIES
 # 
-D_SRC 		:=	src
-D_SRC_BOOT		:=	$(D_SRC)/bootloader/stage1
+D_SRC 				:=	src
+D_SRC_BOOT_S1		:=	$(D_SRC)/bootloader/stage1
+D_SRC_BOOT_S2		:=	$(D_SRC)/bootloader/stage2
 
-D_BUILD		:=	build
-D_BUILD_BOOT	:=	$(D_BUILD)/boot
+D_BUILD				:=	build
+D_BUILD_BOOT_S1		:=	$(D_BUILD)/boots1
+D_BUILD_BOOT_S2		:=	$(D_BUILD)/boots2
 
 #
 # BUILDING TOOLS
@@ -30,7 +32,8 @@ MCOPY		?=	mcopy
 #
 # FILES
 # 
-BOOT		:=	$(D_BUILD)/boot.bin
+BOOT_S1		:=	$(D_BUILD)/boots1.bin
+BOOT_S2		:=	$(D_BUILD)/boots2.bin
 
 IMAGE_OUT	:= 	AmethystOS.img
 
@@ -46,30 +49,36 @@ LDFLAGS		?=	-T $(LINKER)
 .PHONY: bootloader kernel image clean all install
 
 all: always clean image
-bootloader:	always $(BOOT)
+bootloader:	always $(BOOT_S1) $(BOOT_S2)
 image: always $(IMAGE_OUT)
 clean: 
 	@rm -rf build/*
-	@rm -f $(BOOT)
+	@rm -f $(BOOT_S1)
 	@rm -f $(IMAGE_OUT)
 
 #
 # BOOTLOADER STAGE 1
-$(BOOT) : $(D_SRC_BOOT)
-	@$(MAKE) -C $< all D_BUILD=$(abspath $(D_BUILD_BOOT)) OUT=$(abspath $(BOOT))
+$(BOOT_S1) : $(D_SRC_BOOT_S1)
+	@$(MAKE) -C $< all D_BUILD=$(abspath $(D_BUILD_BOOT_S1)) OUT=$(abspath $(BOOT_S1))
+	@echo
+
+#
+# BOOTLOADER STAGE 2
+$(BOOT_S2) : $(D_SRC_BOOT_S2)
+	@$(MAKE) -C $< all D_BUILD=$(abspath $(D_BUILD_BOOT_S2)) OUT=$(abspath $(BOOT_S2))
 	@echo
 
 #
 # OUTPUT
-$(IMAGE_OUT) : $(BOOT)
+$(IMAGE_OUT) : bootloader
 	@echo Creating the image output
 	@$(DD) if=/dev/zero of=$(IMAGE_OUT) bs=512 count=2880 status=none
 	@echo Adding fs to the image
 	@$(MKFS_FAT) -F 12 -n "AMETHYSTOS" $(IMAGE_OUT)
 	@echo Copying the bootloader in the image
-	@$(DD) if=$(BOOT) of=$(IMAGE_OUT) conv=notrunc status=none
+	@$(DD) if=$(BOOT_S1) of=$(IMAGE_OUT) conv=notrunc status=none
 	@echo Adding files in the image disk
-	@$(MCOPY) -i $(IMAGE_OUT) test.txt "::boots2.bin"
+	@$(MCOPY) -i $(IMAGE_OUT) $(BOOT_S2) "::boots2.bin"
 
 install: $(DISK)
 

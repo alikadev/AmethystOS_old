@@ -4,6 +4,8 @@
 jmp _boot
 nop
 
+; TODO: Find new name for labels
+
 ; ===== FAT HEADERS ===== ;
 ; Boot record
 bs_oem_name:				db 'MSDOS5.0'
@@ -11,7 +13,7 @@ bs_byte_per_sector:			dw 512
 bpb_sector_per_cluster:		db 1
 bpb_reserved_sector_count:	dw 1
 bpb_number_fats:			db 2
-bpb_root_entry_count:		dw 0x0E0
+bpb_root_entry_count:		dw 0xE0
 bpb_total_sector_16bit:		dw 2880
 bpb_media:					db 0xF0
 bpb_sectors_per_fat:		dw 9
@@ -103,7 +105,7 @@ read_entries:
 	push 	di 										; Save DI (will be modified)
 	repe 	cmpsb									; Compare the strings
 	pop 	di 										; Restore DI
-	je 		.load_boots2 							; If they are the same, we found it!
+	je 		load_boots2 							; If they are the same, we found it!
  	; Increment the counter
 	inc  	bx  									; Increment the number of element readed
 	add  	di,			32  						; Increment the entry pointer
@@ -112,9 +114,28 @@ read_entries:
 	mov 	si,			s_err_not_found				; Print error string
 	call  	puts 									; ...
 	halt_cpu 										; Halt CPU
-.load_boots2:
-	mov  	si,  		s_file_found
-	call 	puts
+load_boots2:
+	; Getting the size of the file
+	; WARN: Remainder is not calculated...
+	mov  	eax,  		[di+28]  					; EAX = size of file in byte
+	mov  	bx,			[bs_byte_per_sector]  		; BX = Number byte per sector
+	div   	bx 				  						; AL = size in sector, DX = remainder
+	xor  	ah,  		ah 							; Clear garbage in AH
+	or  	dx, 		dx 							; Compare the remainder with 0
+	jz		.next 									; If remainder is not 0, will grab last sector
+	inc     ax 										; Increment the number of sector to grab
+.next:
+	push 	ax 										; Saving it for later
+	; Getting the address of the file
+	; first cluster = (kernel_cluster_number -2) * sectors_per_cluster + + cluster_number
+	; WARN: May only work on floppy... 31 is a MAGIC NUMBER
+	mov   	ax,			[di + 26] 					; AX = cluster
+	add  	ax,  		31 							; Add previous sectors
+	call 	lbachs
+	; Read the file
+	pop   	ax  									; Restore the size
+	call 	read 									; Read the file in the buffer
+	jmp		buffer 									; SI point to the file content
 	halt_cpu
 
 ;
@@ -231,6 +252,8 @@ puth:
 
 	popa
 	ret
+
+cluster:		dw 0
 
 s_welcome: 			db "Booting...", 0x0A, 0
 s_err_disk_read: 	db "F:READ=", 0
