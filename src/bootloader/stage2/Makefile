@@ -15,7 +15,7 @@ print:
 
 $(OUT) : $(SRC)
 	@echo '  Building $<'
-	@$(ASM) $(ASMFLAGS) -o $@ $<
+	@$(ASM) $(ASMFLAGS) -o $@ $(SRC)
 
 clean:
 	@echo $(OUT)

@@ -5,6 +5,9 @@ jmp _boot
 nop
 
 ; TODO: Find new name for labels
+; TODO: Smaller name for FAT header entry
+; TODO: More error handling and error message
+; TODO: Warnings at load_boots2
 
 ; ===== FAT HEADERS ===== ;
 ; Boot record
