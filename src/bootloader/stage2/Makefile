@@ -4,7 +4,7 @@ OUT 	?=	boots2.bin
 
 ASM 	?=	nasm
 
-SRC 	:=	$(shell find $(D_SRC) -name '*.asm')
+SRC_ASM 	:=	$(shell find $(D_SRC) -name '*.asm')
 
 ASMFLAGS	:=	-f bin
 .PHONY: all clean
@@ -13,9 +13,9 @@ all: print always $(OUT)
 print:
 	@echo Building bootloader second stage
 
-$(OUT) : $(SRC)
+$(OUT) : $(SRC_ASM)
 	@echo '  Building $<'
-	@$(ASM) $(ASMFLAGS) -o $@ $(SRC)
+	@$(ASM) $(ASMFLAGS) -o $@ $(SRC_ASM)
 
 clean:
 	@echo $(OUT)
