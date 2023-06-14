@@ -1,10 +1,8 @@
-[org 0x7E00]
 [bits 16]
 
-; TODO: Jump in Protected Mode
-; TODO: Load and run the Kernel
-; TODO: Adding a Load Menu to choose what kernel to run
+extern _start
 
+global entry
 entry:
 	cli
 	lgdt 	[GDT_Descriptor]
@@ -18,11 +16,7 @@ entry:
 
 [bits 32]
 pmode:
-	mov  [0xB8000], word 0x8F00|'H'
-	mov  [0xB8002], word 0x8F00|'e'
-	mov  [0xB8004], word 0x8F00|'l'
-	mov  [0xB8006], word 0x8F00|'l'
-	mov  [0xB8008], word 0x8F00|'o'
+	call _start
 	cli
 	hlt
 
