@@ -71,14 +71,14 @@ $(BOOT_S2) : $(D_SRC_BOOT_S2)
 #
 # OUTPUT
 $(IMAGE_OUT) : bootloader
-	@echo "Burnable Image"
-	@echo "\e[1;32m  Creating\e[0m output image"
+	@printf "Burnable Image\n"
+	@printf "\e[1;32m  Creating\e[0m output image\n"
 	@$(DD) if=/dev/zero of=$(IMAGE_OUT) bs=512 count=2880 status=none
-	@echo "\e[1;32m  Writing\e[0m FS"
+	@printf "\e[1;32m  Writing\e[0m FS\n"
 	@$(MKFS_FAT) -F 12 -n "AMETHYSTOS" $(IMAGE_OUT) >  /dev/null
-	@echo "\e[1;32m  Writing\e[0m boot sector"
+	@printf "\e[1;32m  Writing\e[0m boot sector\n"
 	@$(DD) if=$(BOOT_S1) of=$(IMAGE_OUT) conv=notrunc status=none
-	@echo "\e[1;32m  Copying\e[0m boots2.bin"
+	@printf "\e[1;32m  Copying\e[0m boots2.bin\n"
 	@$(MCOPY) -i $(IMAGE_OUT) $(BOOT_S2) "::boots2.bin"
 
 install: $(DISK)

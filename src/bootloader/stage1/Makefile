@@ -10,14 +10,14 @@ ASMFLAGS	:=	-f bin
 
 all: print always clean $(OUT)
 print:
-	@echo "Bootloader First Stage"
+	@printf "Bootloader First Stage\n"
 
 $(OUT) : $(SRC)
-	@echo "\e[1;32m  Building\e[0m" $(notdir $@)
+	@printf "\e[1;32m  Building\e[0m $(notdir $@)\n"
 	@$(ASM) $(ASMFLAGS) -o $@ $<
 
 clean:
-	@echo "\e[1;32m  Cleaning\e[0m"
+	@printf "\e[1;32m  Cleaning\e[0m\n"
 	@rm -f $(D_BUILD)/*
 
 always:

@@ -23,22 +23,22 @@ LDFLAGS		:=	-T $(LINKER)
 all: always print clean $(OUT)
 
 print:
-	@echo "Bootloader Second Stage"
+	@printf "Bootloader Second Stage\n"
 
 $(OUT) : $(OBJ_ASM) $(OBJ_C)
-	@echo "\e[1;32m  Building\e[0m" $(notdir $@)
+	@printf "\e[1;32m  Building\e[0m $(notdir $@)\n"
 	@$(LD) -o $@ $(LDFLAGS) $(OBJ_ASM) $(OBJ_C)
 
 $(D_BUILD)/%.asm.o: $(D_SRC)/%.asm
-	@echo "\e[1;32m  Compiling\e[0m" $(notdir $<)
+	@printf "\e[1;32m  Compiling\e[0m $(notdir $<)\n"
 	@$(ASM) -o $@ $(ASMFLAGS) $<
 
 $(D_BUILD)/%.c.o: $(D_SRC)/%.c
-	@echo "\e[1;32m  Compiling\e[0m" $(notdir $<)
+	@printf "\e[1;32m  Compiling\e[0m $(notdir $<)\n"
 	@$(CC) -o $@ $(CFLAGS) $<
 
 clean:
-	@echo "\e[1;32m  Cleaning\e[0m"
+	@printf "\e[1;32m  Cleaning\e[0m\n"
 	@rm -f $(D_BUILD)/*
 
 always:
