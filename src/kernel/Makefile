@@ -1,6 +1,5 @@
 D_BUILD		?=	build
-D_SRC		:=	src
-D_INCLUDE	:=	include
+D_SRC		:=	 src
 OUT			?=	boots2.bin
 
 LINKER		:=	linker.ld
@@ -15,7 +14,7 @@ OBJ_ASM		:=	$(subst $(D_SRC), $(D_BUILD), $(SRC_ASM:%.asm=%.asm.o))
 SRC_C		:=	$(shell find $(D_SRC) -name '*.c')
 OBJ_C		:=	$(subst $(D_SRC), $(D_BUILD), $(SRC_C:%.c=%.c.o))
 
-ASMFLAGS 	:=	-f elf32 -I$(D_INCLUDE)
+ASMFLAGS 	:=	-f elf32
 CFLAGS	 	:=	-nolibc -ffreestanding -fno-pie -c -m32 -std=c11
 LDFLAGS		:=	-T $(LINKER)
 

@@ -35,12 +35,18 @@ bs_file_system_type:		db 'FAT12   '
 
 ; ===== BOOTCODE ===== ;
 
-%macro 		halt_cpu 0
+%macro  	print		1
+	mov 	si,			%1
+	call  	puts
+%endmacro
+
+%macro 		halt_cpu 	0
 	cli
 	hlt
 %endmacro
 
 _boot:
+	print 	s_welcome 								; Debug in screen
 	mov 	[bs_drive_number],	dl 					; Save disk drive number
 
 	; Setup data segment
@@ -56,9 +62,6 @@ _boot:
 	jmp 	0:init 									; Jump far to 0:init. Will set CS
 
 init:
-	mov  	si, 		s_welcome 				; Print greetings
-	call 	puts
-
 .setup_fat:
 	; Read drive parameters instead of relying on
 	; data on formatted disk
@@ -92,6 +95,7 @@ init:
 	div  	bx										; AX = (number_of_entries * 32) - bytes_per_sector
 
 read_entries:
+	print	s_search_boot_bin 						; Debug in screen
 	mov 	ax, 		19							; Get the LBA of the 
 	call 	lbachs 									; Get the CHS address
 	call 	read 									; Read the disk at the CHS address
@@ -114,12 +118,12 @@ read_entries:
 	add  	di,			32  						; Increment the entry pointer
 	jmp 	.check_entries 							; Look back
 .fail_found:
-	mov 	si,			s_err_not_found				; Print error string
-	call  	puts 									; ...
+	print	s_err_not_found							; Print error string
 	halt_cpu 										; Halt CPU
 load_boots2:
 	; Getting the size of the file
 	; WARN: Remainder is not calculated...
+	print 	s_load_boot_bin
 	mov  	eax,  		[di+28]  					; EAX = size of file in byte
 	mov  	bx,			[bs_byte_per_sector]  		; BX = Number byte per sector
 	div   	bx 				  						; AL = size in sector, DX = remainder
@@ -136,6 +140,7 @@ load_boots2:
 	add  	ax,  		31 							; Add previous sectors
 	call 	lbachs
 	; Read the file
+	print 	s_exec_boot_bin
 	pop   	ax  									; Restore the size
 	call 	read 									; Read the file in the buffer
 	jmp		buffer 									; SI point to the file content
@@ -163,8 +168,7 @@ read:
 
 disk_error:
 	mov 	al,		ah 								; Set error code in AL to be printed
-	mov  	si, 	s_err_disk_read					; Set message read failure in SI
-	call 	puts 									; Print the message
+	print  	s_err_disk_read							; Set message read failure in SI
 	call 	puth 									; Print the error code
 	halt_cpu										; Halt the machine
 
@@ -258,10 +262,13 @@ puth:
 
 cluster:		dw 0
 
-s_welcome: 			db "Booting...", 0x0A, 0
+s_welcome: 			db "Welcome in AmethystOS!", 0x0A, 0
+s_search_boot_bin:	db "Searching boot.bin", 0x0A, 0
+s_load_boot_bin:	db "Loading boot.bin", 0x0A, 0
+s_exec_boot_bin:	db "Executing boot.bin", 0x0A, 0
 s_err_disk_read: 	db "F:READ=", 0
 s_err_not_found:	db "F:NotFound", 0
-s_boots2:			db "BOOTS2  BIN"
+s_boots2:			db "BOOT    BIN"
 s_file_found: 		db "File is found"
 
 times 510 - ($ - $$) db 0

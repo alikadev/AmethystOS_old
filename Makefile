@@ -79,7 +79,7 @@ $(IMAGE_OUT) : bootloader
 	@printf "\e[1;32m  Writing\e[0m boot sector\n"
 	@$(DD) if=$(BOOT_S1) of=$(IMAGE_OUT) conv=notrunc status=none
 	@printf "\e[1;32m  Copying\e[0m boots2.bin\n"
-	@$(MCOPY) -i $(IMAGE_OUT) $(BOOT_S2) "::boots2.bin"
+	@$(MCOPY) -i $(IMAGE_OUT) $(BOOT_S2) "::boot.bin"
 
 install: $(DISK)
 
