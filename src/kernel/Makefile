@@ -23,7 +23,7 @@ LDFLAGS		:=	-T $(LINKER)
 all: always print clean $(OUT)
 
 print:
-	@printf "Bootloader Second Stage\n"
+	@printf "Kernel\n"
 
 $(OUT) : $(OBJ_ASM) $(OBJ_C)
 	@printf "\e[1;32m  Building\e[0m $(notdir $@)\n"

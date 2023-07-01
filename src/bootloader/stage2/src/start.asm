@@ -2,14 +2,36 @@
 
 %include "gdt.inc"
 %include "io.inc"
+%include "fs.inc"
 
 section .entry
 
 global entry
 entry:
+	; Save the drive id
+	xor  	ah,			ah
+	mov  	[diskID],	ax
+	; Print stuff...
 	print	s_hello							; Print greetings
-	; TODO: Load kernel.bin
-	print 	s_TODO_load
+	print 	s_disk_id
+	call  	puth
+	mov 	al,			0xA
+	call 	putc
+	; Setup FS
+	print   s_setup_FS
+	mov  	al,			[diskID]
+	call  	fs_init
+	jc  	failure
+	; Load kernel
+	print   s_searching_kernel
+	mov 	si,			kernel_file
+	; Kernel address is 0x1000
+	mov  	bx,			0x1000
+	mov  	es,			bx
+	mov  	bx,			0x0000
+	call    fs_read
+	jc  	failure
+.next:
 	; Setup GDT
 	print 	s_setup_GDT
 	cli 									; Clear interrupts
@@ -32,10 +54,28 @@ entry:
 	mov 	[edi], 		word '2' | (0x05 << 8)
 	add 	edi, 		2
 	; TODO: Jump to kernel
-	hlt 									
+	mov edi, 0x10000
+	jmp edi
+	hlt
+
+section .text
+
+failure:
+	print 	s_failure
+	cli
+	hlt
 
 section .data
 
 s_hello: db "Welcome from boot.bin!", 0xA, 0
+s_disk_id: db "DiskID: ", 0
 s_setup_GDT: db "Setup GDT", 0xA, 0
-s_TODO_load: db "[TODO]: Load kernel.bin", 0xA, 0
+s_setup_FS: db "Setup FS", 0xA, 0
+s_searching_kernel: db "Searching and reading the kernel file", 0xA, 0
+s_failure: db "Failure in finding file", 0xA, 0
+
+kernel_file: db "KERN0   BIN"
+
+section .bss
+
+diskID: resb 1

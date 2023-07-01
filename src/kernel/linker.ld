@@ -1,10 +1,10 @@
 OUTPUT_FORMAT(binary)
 OUTPUT_ARCH(i386)
-ENTRY(entry)
+ENTRY(_start)
 SECTIONS
 {
-	.       = 0x00007E00;
-	.text   : { *(.text) }
+	.       = 0x10000;
+	.text   : { *(.entry) *(.text) }
 	.data   : { *(.data) }
 	.bss    : { *(.bss) }
 }

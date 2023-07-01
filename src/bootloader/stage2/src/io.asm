@@ -52,9 +52,9 @@ puth:
 	shr  	ax, 	12
 	cmp  	ax, 	10
 	jl   	.skip
-	add  	ax, 	7
+	add  	ax, 	'A'-('9'+1)
 .skip:
-	add  	ax, 	48
+	add  	ax, 	'0'
 	call 	putc
 	loop 	.next
 

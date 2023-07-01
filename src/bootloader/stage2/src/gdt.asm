@@ -1,7 +1,8 @@
 [bits 16]
 
-global setupGDT
+section .text
 
+global setupGDT
 global CODE_SEGMENT
 global DATA_SEGMENT
 
@@ -10,7 +11,7 @@ setupGDT:
 	ret
 
 GDT:
-.null_segment: 	dd 0, 0 
+.null_segment: 	dq 0 
 
 .code_segment: 	dw 0xFFFF 		; Limit 16 bits
 				dw 0 			; base 16bits
@@ -23,7 +24,7 @@ GDT:
 				dw 0 			; Base 16 bits
 				db 0 			; Base 8 bits = 24 bits
 				db 0b10010010 	; present,privilege,type,Type flags
-				db 0b11001111 	; Pther flags + limit (last 4 bits)
+				db 0b11001111 	; Other flags + limit (last 4 bits)
 				db 0 			; Last 8 bit of the base
 .end:
 

@@ -125,14 +125,13 @@ load_boots2:
 	; WARN: Remainder is not calculated...
 	print 	s_load_boot_bin
 	mov  	eax,  		[di+28]  					; EAX = size of file in byte
+	xor  	ebx,		ebx
 	mov  	bx,			[bs_byte_per_sector]  		; BX = Number byte per sector
 	div   	bx 				  						; AL = size in sector, DX = remainder
-	xor  	ah,  		ah 							; Clear garbage in AH
-	or  	dx, 		dx 							; Compare the remainder with 0
+	or  	edx, 		edx 						; Compare the remainder with 0
 	jz		.next 									; If remainder is not 0, will grab last sector
-	inc     ax 										; Increment the number of sector to grab
+	inc     eax										; Increment the number of sector to grab
 .next:
-	push 	ax 										; Saving it for later
 	; Getting the address of the file
 	; first cluster = (kernel_cluster_number -2) * sectors_per_cluster + + cluster_number
 	; WARN: May only work on floppy... 31 is a MAGIC NUMBER
@@ -141,7 +140,7 @@ load_boots2:
 	call 	lbachs
 	; Read the file
 	print 	s_exec_boot_bin
-	pop   	ax  									; Restore the size
+	mov   	ax,			[bs_drive_number]
 	call 	read 									; Read the file in the buffer
 	jmp		buffer 									; SI point to the file content
 	halt_cpu
