@@ -21,9 +21,9 @@ OFF_BYTPERSEC equ 11
 ; IN   AL  The drive id
 ; OUT  CF  Set if failure
 fs_init:
+	mov  	dl,			al 				; DL must contains Disk ID
 	xor  	dh,			dh				; Clear DL
 	mov 	[diskID], 	dl
-	mov  	dl,			al 				; DL must contains Disk ID
 	; Reset disk
 	call 	disk_reset
 	jc   	error.reset_failure
@@ -31,21 +31,31 @@ fs_init:
 	call  	disk_get_info
 	jc 		error.get_info_failure
 	; Get number of sector per track
-	and 	cl, 		0x3F 			; Remove high 2 bits
-	xor 	ch, 		ch 				; CH = 0 (CX = 00000000 00NNNNNN)
-	mov 	[sectors_per_track], cx		; Save sector number
+	and 	cl, 		0x3F 				; Remove high 2 bits
+	xor 	ch, 		ch 					; CH = 0 (CX = 00000000 00NNNNNN)
+	mov 	[sectors_per_track], cx			; Save sector number
 	; Get number of head
 	inc  	dh
 	mov     [head_count], dh
-	; Get the address of the first sector
-	xor 	ax,		ax 								; LBA = 0 (first sector)
-	call    lba_to_chs
-	mov     al, 1 									; Only read 1 sector
-	mov  	bx,		0 								; ES:BX -> Address of
-	mov 	es, 	bx 								; pointer
-	mov 	bx, 	buffer 							; BX is 7E00
-	mov 	dl, 	[diskID] 						; DL = Disk ID
-	call  	disk_read 
+	; Check if the BIOS support the Extended interrupt 13
+	mov  	ah,			0x41
+	mov 	dl,			[diskID]
+	mov 	bx,			0x55AA
+	int  	0x13
+	jc  	error.too_old
+	; Minimal DAP values
+	mov  	[DAP.size],			byte 0x10
+	mov  	[DAP.reserved], 	byte 0
+	; Read first sector
+	mov  	[DAP.txcount], 		word 1
+	mov 	[DAP.txbuffer], 	word buffer
+	mov  	[DAP.txbuffer+2],	word ds
+	mov  	[DAP.lba],			dword 0
+	mov  	[DAP.lba+1],		dword 0
+	mov 	si,					DAP
+	mov 	dl, 				[diskID] 			; DL = Disk ID
+	mov 	ah,					0x42
+	int  	0x13
 	jc 		error.read_disk_failure
 	; Compute LBA of root directory
 	;   = fats * sectors_per_fat + reserved
@@ -62,9 +72,8 @@ fs_init:
 	shl  	ax,			5 							; AX = (number_of_entries * 32)
 	mov  	bx,			[buffer + OFF_BYTPERSEC]	; BX = bytes_per_sector
 	mov   	[bytes_per_sector],bx  					; Save byte per sector for later
-	div  	bx										; AX = (number_of_entries * 32) / bytes_per_sector
+	div 	bx									; AX = (number_of_entries * 32) / bytes_per_sector
 	mov  	[rootdirlen],	ax
-
 	; Get all useful data
 	mov  	ax,			[buffer + OFF_NUMROTENT] 	; Root entry count
 	mov  	[entry_cnt],ax
@@ -82,17 +91,24 @@ fs_read:
 	mov     [filename],	si
 	push 	es 										; Save ES
 	push 	bx 										; Save BX
-	mov 	bx, 		0  							; Set ES to 0
-	mov 	es, 		bx
+	; Set ES
+	xor  	eax,				eax
+	mov   	ax,					ds
+	mov  	es,					ax
 	; Read root directory
-	mov 	ax,			[rootdir]					; LBA = 0 (first sector)
-	call    lba_to_chs
-	mov     bx,			buffer
-	mov     al,		 	[rootdirlen]				; Size of root directory
-	mov 	dl, 		[diskID] 					; DL = Disk ID
-	call  	disk_read 
+	mov  	ax,					[rootdirlen]
+	mov  	[DAP.txcount], 		ax					; Size of root directory
+	mov 	[DAP.txbuffer], 	word buffer
+	mov  	[DAP.txbuffer+2],	ds
+	mov  	ax,					[rootdir]
+	mov  	[DAP.lba],			eax					; LBA of the root directory
+	mov  	[DAP.lba+1],		dword 0
+	mov 	si,					DAP
+	mov 	dl, 				[diskID] 			; DL = Disk ID
+	mov 	ah,					0x42
+	int  	0x13
 	jc 		error.read_disk_failure
-	mov  	di,			bx
+	mov  	di,			buffer
 	xor  	bx,			bx 							; Zero entry number
 .check_entries:
 	; Check if we finish
@@ -110,6 +126,8 @@ fs_read:
 	add  	di,			32  						; Increment the entry pointer
 	jmp 	.check_entries 							; Look back
 .file_found:
+
+	; Check if this is a good file
 	mov 	al,			[di + 0x0B]					; Read file flags
 	bt  	ax,			4   						; Check if it is a directory
 	jc 		error.entry_is_directory
@@ -123,24 +141,35 @@ fs_read:
 	mov  	bx,			[bytes_per_sector]  		; BX = Number byte per sector
 	div   	ebx 			  						; AL = size in sector, DX = remainder
 	or  	edx, 		edx 						; Compare the remainder with 0
-	jz		.load 									; If remainder is not 0, will grab last sector
+	jz		.no_remainder 									; If remainder is not 0, will grab last sector
 	inc     ax 										; Increment the number of sector to grab
-.load:
+.no_remainder
+	mov  	dx,			ax
 	; Getting the address of the file
 	; first cluster = (kernel_cluster_number -2) * sectors_per_cluster + + cluster_number
 	; WARN: May only work on floppy... 31 is a MAGIC NUMBER
+	xor  	eax,		eax
 	mov   	ax,			[di + 26] 					; AX = Logical cluster
 	add  	ax,  		31 							; Add previous sectors
-	call 	lba_to_chs
-	; Read the file
+
 	pop  	bx
 	pop 	es
-	mov 	dl, 	[diskID] 						; DL = Disk ID
-	call 	disk_read								; Read the file in the buffer
-	jc  	error.read_disk_failure
+	mov  	[DAP.txcount], 		dx					; Size of root directory
+	mov 	[DAP.txbuffer], 	bx
+	mov  	[DAP.txbuffer+2],	es
+	mov  	[DAP.lba],			eax					; LBA of the root directory
+	mov  	[DAP.lba+1],		dword 0
+	mov 	si,					DAP
+	mov 	dl, 				[diskID] 			; DL = Disk ID
+	mov 	ah,					0x42
+	int  	0x13
+	jc 		error.read_disk_failure
 	ret
 
 error:
+.too_old:
+	print 	s_bios_too_old
+	jmp  	.error_number_exit
 .reset_failure:
 	print	s_reset_failure
 	jmp 	.error_number_exit
@@ -168,7 +197,7 @@ error:
 .error_number_exit:
 	mov 	al,			ah
 	and  	ax,			0xF
-	call 	puth
+	call 	putx
 	mov  	al,			ENDL
 	call 	putc
 .exit:
@@ -176,38 +205,10 @@ error:
 	ret
 
 
-;
-; Convert an LBA address to a CHS address
-; IN   AX  LDA address
-; OUT  CL  Sector number
-;      CH  Cylinder
-;      DH  Head
-lba_to_chs:
-	push ax											; Save ax
-	push dx 										; Save dl
-
-	xor dx, dx										; DX = 0 
-	div word [sectors_per_track]					; AX = LBA / SectorPerTrack
-													; DX = LBA % SectorPerTrack
-	inc dx 											; DX = LBA % SectorPerTrack + 1
-	mov cx, dx										; Put it in CX
-	
-	xor dx, dx										; DX = 0
-	div word [head_count]							; AX = LBA / SectorPerTrack / heads
-													; DX = LBA % SectorPerTrack / heads
-
-	mov dh, dl 										; DH is head
-	shl ah, 6 							
-	or  cl, ah 										; Put upper 2 bits of cylinder in CL
-
-	pop ax 											; Restore dl
-	mov dl, al
-	pop ax 											; restore ax
-	ret
-
 section .data
 
 s_reset_failure: db "[ERROR]: Fail to reset the disk: ", 0
+s_bios_too_old: db "[ERROR]: Your bios or your drive does not support extended bios interrupts: ", 0
 s_get_info_failure: db "[ERROR]: Fail to get disk informations: ", 0
 s_read_disk_failure: db "[ERROR]: Fail to read the disk: ", 0
 s_file_not_found: db "[ERROR]: File not found!", 0xA, 0
@@ -217,6 +218,13 @@ s_file_found: db "File is founded", 0xA, 0
 ENDL equ 0xA
 
 section .bss
+align 32
+DAP:
+.size: 				resb 1
+.reserved: 			resb 1
+.txcount:  			resb 2
+.txbuffer: 			resb 4
+.lba:				resb 8
 
 filename:			resb 11
 diskID: 			resb 1

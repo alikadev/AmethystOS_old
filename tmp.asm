@@ -1,3 +1,4 @@
+[org 0x7C00]
 [bits 16]
 
 jmp _boot
@@ -45,23 +46,19 @@ bs_file_system_type:		db 'FAT12   '
 %endmacro
 
 _boot:
-	; Setup CS (via a far jump)
-	jmp 	0x07c0:init 							; Jump far to 0:init. Will set CS
-init:
-	; Setup data segment
-	mov 	ax,			0x07C0						; Can't access DS/ES directly
+	xor 	ax,			ax 							; Can't access DS/ES directly
 	mov 	ds,			ax 							; Set Data Segment
-	xor 	ax,			ax
 	mov 	es,			ax 							; Set Extended Segment
-	
+
 	; Setup stack
 	mov 	ss,			ax							; Set stack to 0
-	mov 	sp,			4096						; Set stack point to 0
-
+	mov 	sp,			ax							; Set stack point to 0
 	print 	s_welcome 								; Debug in screen
-	mov   	al,			dl
-	mov 	[bs_drive_number],	dl					; Save disk drive number
+	mov   	ax,			dx
 	call  	putx
+	mov 	[bs_drive_number],	al 					; Save disk drive number
+
+init:
 .setup_fat:
 	; Read drive parameters instead of relying on
 	; data on formatted disk
@@ -122,26 +119,27 @@ read_entries:
 	halt_cpu 										; Halt CPU
 load_boots2:
 	; Getting the size of the file
+	; WARN: Remainder is not calculated...
+	print 	s_load_boot_bin
 	mov  	eax,  		[di+28]  					; EAX = size of file in byte
-	xor  	ebx,		ebx 						; Clear EBX
+	xor  	ebx,		ebx
 	mov  	bx,			[bs_byte_per_sector]  		; BX = Number byte per sector
-	div   	ebx 			  						; AL = size in sector, DX = remainder
+	div   	bx 				  						; AL = size in sector, DX = remainder
 	or  	edx, 		edx 						; Compare the remainder with 0
-	jz		.load 									; If remainder is not 0, will grab last sector
-	inc     ax 										; Increment the number of sector to grab
-
-.load:
+	jz		.next 									; If remainder is not 0, will grab last sector
+	inc     eax										; Increment the number of sector to grab
+.next:
 	; Getting the address of the file
-	; first cluster = (cluster_number -2) * sectors_per_cluster + + cluster_number
+	; first cluster = (kernel_cluster_number -2) * sectors_per_cluster + + cluster_number
 	; WARN: May only work on floppy... 31 is a MAGIC NUMBER
 	mov   	ax,			[di + 26] 					; AX = cluster
 	add  	ax,  		31 							; Add previous sectors
 	call 	lbachs
 	; Read the file
 	print 	s_exec_boot_bin
-	call 	read 									; Read the file in the buffer
 	mov   	ax,			[bs_drive_number]
-	jmp 	buffer								; SI point to the file content
+	call 	read 									; Read the file in the buffer
+	jmp		buffer 									; SI point to the file content
 	halt_cpu
 
 ;
@@ -155,7 +153,7 @@ read:
 	mov  	[try_cnt],	byte 0
 .try:
 	mov 	dl, 		[bs_drive_number] 				; Hard disk number
-	mov  	bx,			0x7c0							; ES:BX -> Address of
+	xor  	bx,			bx								; ES:BX -> Address of
 	mov 	es, 		bx 								; pointer
 	mov 	bx, 		buffer 							; BX is 7E00
 	

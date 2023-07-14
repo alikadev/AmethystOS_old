@@ -1,9 +1,9 @@
 OUTPUT_FORMAT(binary)
 OUTPUT_ARCH(i386)
-ENTRY(_start)
+ENTRY(entry)
 SECTIONS
 {
-	.       = 0x10000;
+	.       = 0x9000;
 	.text   : { *(.entry) *(.text) }
 	.data   : { *(.data) }
 	.bss    : { *(.bss) }

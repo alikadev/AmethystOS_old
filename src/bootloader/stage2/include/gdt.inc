@@ -1,4 +1,4 @@
-extern setupGDT
-
-extern CODE_SEGMENT
-extern DATA_SEGMENT
+extern flushGDT
+extern gdtr
+extern CODE_SEG
+extern DATA_SEG

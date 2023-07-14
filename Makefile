@@ -92,6 +92,7 @@ $(IMAGE_OUT) : bootloader kernel0
 	@$(MCOPY) -i $(IMAGE_OUT) $(KERNEL0) "::kern0.bin"
 
 install: $(DISK)
+	sudo dd if=$(IMAGE_OUT) of=$(DISK) bs=512
 
 always:
 	@mkdir -p $(D_BUILD)

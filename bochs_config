@@ -1,0 +1,8 @@
+megs: 512
+romimage: file="/usr/share/seabios/bios.bin"
+vgaromimage: file ="/usr/share/bochs/VGABIOS-lgpl-latest"
+ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+ata0-master: type=disk, path="AmethystOS.img", mode=flat, cylinders=0, heads=0, spt=0, model="Generic 1234", biosdetect=auto, translation=auto
+boot: c
+mouse: enabled=0
+display_library: options="gui_debug"
