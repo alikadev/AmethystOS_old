@@ -1,5 +1,6 @@
 D_BUILD		?=	build
-D_SRC		:=	 src
+D_SRC		:=	src
+D_INCLUDE 	:=	include
 OUT			?=	boots2.bin
 
 LINKER		:=	linker.ld
@@ -15,7 +16,7 @@ SRC_C		:=	$(shell find $(D_SRC) -name '*.c')
 OBJ_C		:=	$(subst $(D_SRC), $(D_BUILD), $(SRC_C:%.c=%.c.o))
 
 ASMFLAGS 	:=	-f elf32
-CFLAGS	 	:=	-nolibc -ffreestanding -fno-pie -c -m32 -std=c11
+CFLAGS	 	:=	-nolibc -ffreestanding -fno-pie -c -m32 -std=c99 -I$(D_INCLUDE)
 LDFLAGS		:=	-T $(LINKER)
 
 .PHONY: all clean
@@ -30,10 +31,12 @@ $(OUT) : $(OBJ_ASM) $(OBJ_C)
 	@$(LD) -o $@ $(LDFLAGS) $(OBJ_ASM) $(OBJ_C)
 
 $(D_BUILD)/%.asm.o: $(D_SRC)/%.asm
+	@mkdir -p $(dir $@)
 	@printf "\e[1;32m  Compiling\e[0m $(notdir $<)\n"
 	@$(ASM) -o $@ $(ASMFLAGS) $<
 
 $(D_BUILD)/%.c.o: $(D_SRC)/%.c
+	@mkdir -p $(dir $@)
 	@printf "\e[1;32m  Compiling\e[0m $(notdir $<)\n"
 	@$(CC) -o $@ $(CFLAGS) $<
 

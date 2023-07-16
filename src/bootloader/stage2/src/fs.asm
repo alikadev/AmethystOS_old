@@ -143,7 +143,7 @@ fs_read:
 	or  	edx, 		edx 						; Compare the remainder with 0
 	jz		.no_remainder 									; If remainder is not 0, will grab last sector
 	inc     ax 										; Increment the number of sector to grab
-.no_remainder
+.no_remainder:
 	mov  	dx,			ax
 	; Getting the address of the file
 	; first cluster = (kernel_cluster_number -2) * sectors_per_cluster + + cluster_number

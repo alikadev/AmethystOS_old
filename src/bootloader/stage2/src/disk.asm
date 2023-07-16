@@ -32,19 +32,3 @@ disk_get_info:
 	int 	0x13
 	ret
 
-;
-; Read sectors from disk into memory
-; IN   AL  number of sectors to read (must be nonzero)
-;      CL  (0-5) sector number 1-63 (bits 0-5)
-;      CL  (6-7) high two bits of cylinder
-;      CH  low eight bits of cylinder number
-;      DH  head number
-;      DL  drive number
-;      ES:BX  data buffer
-; OUT  CF  Set on error
-;      AH  Status
-disk_read:
-	mov 	ah,			0x2
-	int 	0x13
-	ret
-

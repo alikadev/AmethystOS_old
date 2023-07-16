@@ -3,3 +3,7 @@
 *.img
 *.tmp
 *.sh
+*.log
+*.ini
+*.out
+*.lock

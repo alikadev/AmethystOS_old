@@ -1,0 +1,28 @@
+cpu: count=1, ips=10000000, reset_on_triple_fault=1
+cpu: cpuid_limit_winnt=0
+memory: guest=512, host=256
+pci: enabled=1, chipset=i440fx#, slot1=cirrus
+clock: sync=none, time0=local
+keyboard: type=mf, serial_delay=250
+mouse: enabled=1
+
+private_colormap: enabled=0
+
+display_library: x, options="gui_debug,hideIPS"
+
+romimage: file=/usr/share/seabios/bios-256k.bin
+vgaromimage: file=/usr/share/seabios/vgabios-cirrus.bin
+
+log: bochsout.log
+panic: action=ask
+error: action=report
+info: action=report
+debugger_log: debugger.out
+
+ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+ata1: enabled=1, ioaddr1=0x170, ioaddr2=0x370, irq=15
+ata2: enabled=0, ioaddr1=0x1e8, ioaddr2=0x3e0, irq=11
+ata3: enabled=0, ioaddr1=0x168, ioaddr2=0x360, irq=9
+ata0-master: type=disk, mode=flat, path=AmethystOS.img
+
+boot: disk

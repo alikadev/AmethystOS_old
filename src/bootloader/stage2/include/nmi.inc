@@ -1,2 +1,0 @@
-extern nmi_enable
-extern nmi_disable

@@ -1,8 +1,11 @@
 [bits 32]
 
+extern _start
+
 section .entry
 global entry
 entry:
+	; Jump into the kernel
 	mov  	edi,		0xB8000
 	mov 	[edi], 		word 'k' | (0x0C << 8)
 	add 	edi, 		2
@@ -15,7 +18,4 @@ entry:
 	mov 	[edi], 		word 'e' | (0x09 << 8)
 	add 	edi, 		2
 	mov 	[edi], 		word 'l' | (0x05 << 8)
-	add 	edi, 		2
-	cli
-	hlt
-;	jmp 	_start
+	jmp 	_start

@@ -3,8 +3,6 @@
 %include "gdt.inc"
 %include "io.inc"
 %include "fs.inc"
-%include "nmi.inc"
-%include "a20.inc"
 
 section .entry
 
@@ -33,46 +31,12 @@ entry:
 	print   s_searching_kernel
 	mov 	si,			kernel_file
 	; Kernel address is 0x1000
-	mov 	bx,			0x900
+	mov 	bx,			(KERNEL_LOCATION >> 4)
 	mov  	es,			bx
-	xor 	bx,			bx
+	xor  	bx,			bx
 	clc
 	call    fs_read
 	jc  	failure
-	mov  	edi,		0x9000-0x7e00
-	mov  	ax,			word [edi]
-	call  	putx
-	add  	edi,		2
-	mov  	ax,			word [edi]
-	call  	putx
-	add  	edi,		2
-	mov  	ax,			word [edi]
-	call  	putx
-	add  	edi,		2
-	mov  	ax,			word [edi]
-	call  	putx
-	add  	edi,		2
-	mov  	ax,			word [edi]
-	call  	putx
-	add  	edi,		2
-	mov  	ax,			word [edi]
-	call  	putx
-	add  	edi,		2
-	mov  	ax,			word [edi]
-	call  	putx
-	add  	edi,		2
-	mov  	ax,			word [edi]
-	call  	putx
-	mov  	al,			0xA
-	call  	putc
-	; Disable NMI
-;	print   s_disable_nmi
-;	call   	nmi_disable
-	; Enable A20
-;	print   s_enable_a20line
-;	call  	a20_enable
-;	cli
-;	hlt
 flushGDT:
 	print 	s_setup_pmode
 	sti
@@ -82,19 +46,26 @@ flushGDT:
 	; Go to protected mode
 	cli
 	lgdt 	[gdtr]
-	mov 	ax, 		0x10 ;offset to data
-	mov 	ds, 		ax   ;load segment selector
-	mov 	es, 		ax   ;load segment selector
-	mov 	fs, 		ax   ;load segment selector
-	mov 	gs, 		ax   ;load segment selector
-	mov 	ss, 		ax   ;load segment selector
 	mov  	eax,		cr0
 	or   	eax,		1
 	mov   	cr0,		eax
-	jmp  	CODE_SEG:0x9000
+	jmp  	CODE_SEG:(pmode+0x7e00)
+pmode:
+	[bits 32]
+	mov 	ax, 		DATA_SEG
+	mov 	ds, 		ax 
+	mov 	es, 		ax 
+	mov 	fs, 		ax 
+	mov 	gs, 		ax 
+	mov 	ss, 		ax 
+	mov  	ebp,		0x90000
+	mov  	esp,		ebp
+	jmp  	CODE_SEG:KERNEL_LOCATION
+	cli
+	hlt
 
 section .text
-
+[bits 16]
 failure:
 	print 	s_failure
 	cli
@@ -114,8 +85,8 @@ s_enable_a20line: db "Enable A20 line", 0xA, 0
 s_setup_pmode_success: db "System is now in protected mode!", 0xA, 0
 s_jump_kernel: db "Executing the kernel", 0xA, 0
 s_failure: db "Failure in finding file", 0xA, 0
-
 kernel_file: db "KERN0   BIN"
+KERNEL_LOCATION equ 0x9000
 
 section .bss
 
