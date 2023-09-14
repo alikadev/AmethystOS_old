@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <ctype.h>
 
 /* 
 * function to reverse a string  
@@ -49,4 +50,19 @@ char* itoa(int num, char* str, int base)
     reverse(str, i);
   
     return str;
+}
+
+int atoi(const char *str)
+{
+	// Ignore spaces
+	while (isspace(*str))
+		str++;
+
+    int res = 0;
+ 
+ 	// Iterate the string
+    for (int i = 0; str[i] != '\0'; ++i)
+        res = res * 10 + str[i] - '0';
+ 
+    return res;
 }
