@@ -37,3 +37,8 @@ inw:
 	in ax, dx
 	pop ebp
 	ret
+
+global halt
+halt:
+	cli
+	hlt
