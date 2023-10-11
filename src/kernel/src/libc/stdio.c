@@ -31,7 +31,7 @@ void printchar(const char c)
 		y ++;
 	case '\r':
 		uint32_t tmp = (uint32_t)__vbuf;
-		tmp -= tmp % (__VIDEO_WIDTH * __VIDEO_CHAR_SIZE) + 96;
+		tmp -= tmp % (__VIDEO_WIDTH * __VIDEO_CHAR_SIZE) - 64;
 		__vbuf = (volatile uint8_t *)tmp;
 		x = 0;
 		break;
