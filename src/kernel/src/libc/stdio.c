@@ -3,58 +3,69 @@
 #include <stdlib.h>
 #include <sys/io.h>
 
-#define __VIDEO_WIDTH 80
-#define __VIDEO_HEIGHT 25
-#define __VIDEO_CHAR_SIZE 2
-#define __VIDEO_MEMORY_START (uint8_t*)0xb8000
-#define __VIDEO_MEMORY_SIZE (uint32_t)(__VIDEO_WIDTH * __VIDEO_HEIGHT * __VIDEO_CHAR_SIZE)
-#define __VIDEO_MEMORY_END (__VIDEO_MEMORY_START + __VIDEO_MEMORY_SIZE)
+static int _curX = 0;
+static int _curY = 0;
+static vga_color_t _bgColor = 0x00;
+static vga_color_t _fgColor = 0x0F;
+static const font_t *_pFont = NULL;
 
-volatile static uint8_t *__vbuf = __VIDEO_MEMORY_START;
-volatile static uint8_t __vcol = __DEFAULT_VIDEO_COLOR;
-volatile static int x = 0;
-volatile static int y = 0;
-
-void printchar(const char c)
+void set_font(const font_t *pFont)
 {
-	if (__vbuf >= __VIDEO_MEMORY_END)
+	_pFont = pFont;
+}
+
+void set_fg_color(const vga_color_t fgColor)
+{
+	_fgColor = fgColor;
+}
+
+void set_bg_color(const vga_color_t bgColor)
+{
+	_bgColor = bgColor;
+}
+
+void putchar(const int c)
+{
+	// Check if the font is set
+	if (_pFont == NULL) return;
+
+	// Check if the char will horizontally overflow
+	if ((_curX + 1) * _pFont->width > _VGA_WIDTH)
 	{
-		__vbuf = __VIDEO_MEMORY_START;
-		x = 0;
-		y = 0;
+		_curX = 0;
+		_curY++;
 	}
 
+	// Check if the char will vertically overflow
+	if ((_curY + 1) * _pFont->height > _VGA_HEIGHT)
+		_curY = 0;
+
+	// Process the char
 	switch (c)
 	{
 	case '\n':
-		__vbuf += __VIDEO_WIDTH * __VIDEO_CHAR_SIZE;
-		y ++;
+		_curY++;
+
 	case '\r':
-		uint32_t tmp = (uint32_t)__vbuf;
-		tmp -= tmp % (__VIDEO_WIDTH*__VIDEO_CHAR_SIZE) - 64;
-		__vbuf = (volatile uint8_t *)tmp;
-		x = 0;
+		_curX = 0;
 		break;
-	case '\x8':
-		if (x == 0) return;
-		__vbuf -= 2;
-		*__vbuf = ' ';
-		x --;
-		break;
+
 	default:
-		*__vbuf++ = c;
-		*__vbuf++ = __vcol;
-		x ++;
-		if(x >= __VIDEO_WIDTH)
-		{
-			x -= __VIDEO_WIDTH;
-			y ++;
-		}
+		vga_draw_bitmap(
+				_curX * _pFont->width, 
+				_curY * _pFont->height,
+				_pFont->width,
+				_pFont->height,
+				font_get_char(_pFont, c),
+				_bgColor,
+				_fgColor);
+		_curX++;
+		break;
 	}
 }
 
 void clear(void)
-{
+{/*
 	__vbuf = __VIDEO_MEMORY_START;
 	while (__vbuf < __VIDEO_MEMORY_END)
 	{
@@ -63,27 +74,15 @@ void clear(void)
 	}
 	__vbuf = __VIDEO_MEMORY_START;
 	x = 0;
-	y = 0;
-}
-
-void putc(const char c)
-{
-	printchar(c);
-	movecur(x,y);
-}
-
-void setcol(const uint8_t color)
-{
-	__vcol = color;
+	y = 0;*/
 }
 
 void puts(const char *s)
 {
 	while(*s)
 	{
-		printchar(*s++);
+		putchar(*s++);
 	}
-	movecur(x,y);
 }
 
 void printf(const char *format, ...)
@@ -98,13 +97,14 @@ void printf(const char *format, ...)
     	{
     		format++;
     		if (*format == '%')
-    			putc('%');
-    		else if (*format == 'V' || *format == 'v')
-    			setcol(va_arg(args, int));
+    			putchar('%');
+    		
     		else if (*format == 's' || *format == 'X')
     			puts(va_arg(args, char*));
+
     		else if (*format == 'c' || *format == 'C')
-    			putc(va_arg(args, int));
+    			putchar(va_arg(args, int));
+    		
     		else if (*format == 'd' || *format == 'D')
     		{
     			itoa(va_arg(args, int), sbuf, 10);
@@ -120,7 +120,7 @@ void printf(const char *format, ...)
     	}
     	else
     	{
-    		putc(*format);
+    		putchar(*format);
     	}
     	format++;
     }
@@ -129,7 +129,7 @@ void printf(const char *format, ...)
 
 uint8_t oldkey = 0;
 uint8_t getkey(void)
-{
+{/*
 	while (1)
 	{
 		uint8_t key = inb(0x60);
@@ -137,11 +137,11 @@ uint8_t getkey(void)
 			continue;
 		oldkey = key;
 		return key;
-	}
+	}*/
 }
 
 void movecur(int px, int py)
-{
+{/*
 	uint16_t pos = py * __VIDEO_WIDTH + px;
 	x = px;
 	y = py;
@@ -149,5 +149,5 @@ void movecur(int px, int py)
 	outb(0x3D4, 0x0F);
 	outb(0x3D5, (uint8_t) (pos & 0xFF));
 	outb(0x3D4, 0x0E);
-	outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
+	outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));*/
 }

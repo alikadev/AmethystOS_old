@@ -37,6 +37,11 @@ entry:
 	clc
 	call    fs_read
 	jc  	failure
+	; Setup video mode
+	;   VGA 320x200 256 colors
+	xor 	ah, 		ah
+	mov 	al, 		0x13
+	int 	0x10
 flushGDT:
 	print 	s_setup_pmode
 	sti

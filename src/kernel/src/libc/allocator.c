@@ -7,14 +7,14 @@ typedef struct
 {
 	void *start;
 	size_t size;
-} Chunk;
-typedef Chunk ChunkList[CHUNK_QTY];
+} _chunk_t;
+typedef _chunk_t _chunk_list_t[CHUNK_QTY];
 
 // Used chunks
-static ChunkList allocated = {0};
-static ChunkList freed = {0};
+static _chunk_list_t allocated = {0};
+static _chunk_list_t freed = {0};
 
-int insert_chunk(Chunk *pChunk, ChunkList list)
+int insert_chunk(_chunk_t *pChunk, _chunk_list_t list)
 {
 	for (int i = 0; i < CHUNK_QTY; i++)
 	{
@@ -29,7 +29,7 @@ int insert_chunk(Chunk *pChunk, ChunkList list)
 	return 0;
 }
 
-int merge_chunk(Chunk *pChunk, ChunkList list)
+int merge_chunk(_chunk_t *pChunk, _chunk_list_t list)
 {
 	for (int i = 0; i < CHUNK_QTY; i++)
 	{
@@ -52,7 +52,7 @@ int merge_chunk(Chunk *pChunk, ChunkList list)
 	return insert_chunk(pChunk, list);
 }
 
-int remove_chunk_by_size(Chunk *pChunk, ChunkList list, const size_t size)
+int remove_chunk_by_size(_chunk_t *pChunk, _chunk_list_t list, const size_t size)
 {
 	for (int i = 0; i < CHUNK_QTY; ++i)
 	{
@@ -71,11 +71,11 @@ int remove_chunk_by_size(Chunk *pChunk, ChunkList list, const size_t size)
 	return 0;
 }
 
-int remove_chunk_by_address(Chunk *pChunk, ChunkList list, const void *ptr)
+int remove_chunk_by_address(_chunk_t *pChunk, _chunk_list_t list, const void *ptr)
 {
 	for (int i = 0; i < CHUNK_QTY; ++i)
 	{
-		Chunk *chunk = &list[i];
+		_chunk_t *chunk = &list[i];
 		if (list[i].start == ptr)
 		{
 			pChunk->size = chunk->size;
@@ -112,7 +112,7 @@ void free(void *ptr)
 		return;
 	}
 
-	Chunk chunk;
+	_chunk_t chunk;
 	if (remove_chunk_by_address(&chunk, allocated, ptr) == 0)
 	{
 		// printf("Pointer %p is not allocated\n", ptr);
@@ -133,7 +133,7 @@ void *malloc(size_t size)
 		return NULL;
 	}
 
-	Chunk chunk;
+	_chunk_t chunk;
 	if (remove_chunk_by_size(&chunk, freed, size) == 0)
 	{
 		// printf("Heap is full\n");
