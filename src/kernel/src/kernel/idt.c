@@ -1,7 +1,7 @@
-#include "idt.h"
+#include "idt_internal.h"
 #include <kernel/idt.h>
-#include <stdio.h>
 #include <kernel/isr.h>
+#include <stdio.h>
 
 __attribute__((aligned(0x10)))
 static idt_entry_t _idt[IDT_ENTRY_COUNT] = {0};
