@@ -7,6 +7,7 @@ __attribute__((aligned(0x10)))
 static idt_entry_t _idt[IDT_ENTRY_COUNT] = {0};
 
 static idtr_t _idtr;
+extern void *isr_list[];
 
 void idt_init(void)
 {
@@ -16,13 +17,14 @@ void idt_init(void)
 	__asm__ volatile ("lidt %0" : : "m"(_idtr));
 	__asm__ volatile ("sti");
 
-	for (int i = IDT_EXCEPTION_START; i < IDT_EXCEPTION_COUNT; i++)
+	for (int i = 0; i < 0x20; i++)
 	{
+		if (!isr_list[i]) continue;
 		idt_set_descriptor(
 				i, 
-				isr_undefined_error, 
+				isr_list[i], 
 				IDT_PRESENT | IDT_GATE_INT32 | IDT_RING_KERNEL);
-	}
+		}
 }
 
 void idt_set_descriptor(uint8_t vector, void *addr, uint8_t attrs)
