@@ -4,6 +4,7 @@
 #include <sys/font.h>
 #include <kernel/idt.h>
 #include <kernel/syscalls.h>
+#include <kernel/pic.h>
 
 #define HEAP_START ((void*)0x1000000)
 #define HEAP_SIZE  ((size_t)0x1000000)
@@ -16,6 +17,9 @@ void _start(void)
 {
 	clear();
 	set_font(&font_6x8);
+
+	// Remap IRQ0
+	pic_remap_irq0();
 
 	// Init IDT
 	idt_init();
