@@ -10,5 +10,6 @@ void outw(uint16_t port, uint16_t val);
 uint16_t inw(uint16_t port);
 
 void halt(void);
+void return_interrupt(void);
 
 #endif //__SYS__IO_H_
