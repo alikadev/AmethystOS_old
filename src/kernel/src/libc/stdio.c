@@ -65,7 +65,9 @@ void putchar(const int c)
 }
 
 void clear(void)
-{/*
+{
+	vga_draw_rect(0,0,_VGA_WIDTH, _VGA_HEIGHT, _bgColor);
+/*
 	__vbuf = __VIDEO_MEMORY_START;
 	while (__vbuf < __VIDEO_MEMORY_END)
 	{
