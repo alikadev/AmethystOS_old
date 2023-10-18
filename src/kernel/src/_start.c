@@ -5,13 +5,15 @@
 #include <kernel/idt.h>
 #include <kernel/syscalls.h>
 #include <kernel/pic.h>
+#include <kernel/pci.h>
 
 #define HEAP_START ((void*)0x1000000)
 #define HEAP_SIZE  ((size_t)0x1000000)
 
-void testsyscalls(void);
-
 extern font_t font_6x8;
+
+extern uint32_t pciDeviceCount;
+extern pci_device_t pciDevices[PCI_DEV_MAX_COUNT];
 
 void _start(void)
 {
@@ -33,21 +35,36 @@ void _start(void)
 
 	// Initialize the allocator
 	alloc_init(HEAP_START, HEAP_SIZE);
-	printf("VGA video test:\n");
-	printf("  -0-1-2-3-4-5-6-7-8-9-A-B-C-D-E-F\n");
-	printf("0-\n1-\n2-\n3-\n4-\n5-\n6-\n7-\n8-\n9-\nA-\nB-\nC-\nD-\nE-\nF-\n");
-	for (int yoff = 0; yoff < 0x10; ++yoff)
-	{
-		for (int xoff = 0; xoff < 0x10; ++xoff)
-		{
-			vga_draw_rect(
-					font_6x8.width * 2 * (xoff+1),
-					font_6x8.height    * (yoff+2),
-					font_6x8.width  * 2,
-					font_6x8.height,
-					(yoff << 4) | xoff);
-		}
-	}
 
-	halt();
+	// Initialize the PCI
+	pci_init();
+
+	// Video test
+	printf("Everything is init!\n");
+
+	for (int i = 0; i < pciDeviceCount; ++i)
+	{
+		uint32_t vendorID, deviceID, class, subclass, progIf;
+		vendorID = pci_read(pciDevices[i], PCI_VENDOR_ID);
+		deviceID = pci_read(pciDevices[i], PCI_DEVICE_ID);
+		class    = pci_read(pciDevices[i], PCI_CLASS);
+		subclass = pci_read(pciDevices[i], PCI_SUBCLASS);
+		progIf   = pci_read(pciDevices[i], PCI_PROG_IF);
+
+		printf("Vendor:%x, Device:%x ",
+				vendorID, deviceID);
+		if (class == 0xC && subclass == 0x3)
+		{
+			if (progIf == 0x0) printf("is UHCI");
+			else if (progIf == 0x10) printf("is OHCI");
+			else if (progIf == 0x20) printf("is EHCI");
+			else if (progIf == 0x30) printf("is XHCI");
+			else printf("is unknown USB controller");
+		}
+
+		putchar('\n');
+	}
+	
+	while(1)
+		;;
 }
