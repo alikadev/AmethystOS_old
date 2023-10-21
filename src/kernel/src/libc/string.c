@@ -7,6 +7,17 @@ uint32_t strlen(const char *str)
 		len++;
 }
 
+size_t strnlen(const char *s, size_t maxlen)
+{
+	const char *es = s;
+	while (*es && maxlen) {
+		es++;
+		maxlen--;
+	}
+
+	return (es - s);
+}
+
 int strcmp(const char *s1, const char *s2)
 {
 	while (*s1)

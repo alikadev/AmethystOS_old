@@ -87,48 +87,6 @@ void puts(const char *s)
 	}
 }
 
-void printf(const char *format, ...)
-{
-    va_list args;
-    char sbuf[33];
-
-    va_start(args, format);
-    while(*format)
-    {
-    	if(*format == '%')
-    	{
-    		format++;
-    		if (*format == '%')
-    			putchar('%');
-    		
-    		else if (*format == 's' || *format == 'X')
-    			puts(va_arg(args, char*));
-
-    		else if (*format == 'c' || *format == 'C')
-    			putchar(va_arg(args, int));
-    		
-    		else if (*format == 'd' || *format == 'D')
-    		{
-    			itoa(va_arg(args, int), sbuf, 10);
-    			puts(sbuf);
-    		}
-    		else if (*format == 'x' || *format == 'X')
-    		{
-    			itoa(va_arg(args, int), sbuf, 16);
-    			puts(sbuf);
-    		}
-    		else if (*format == '\0')
-    			return;
-    	}
-    	else
-    	{
-    		putchar(*format);
-    	}
-    	format++;
-    }
-    va_end(args);
-}
-
 uint8_t oldkey = 0;
 uint8_t getkey(void)
 {/*
