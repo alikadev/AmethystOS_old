@@ -8,7 +8,7 @@
 
 extern font_t font_6x8;
 
-void _start(void)
+void _start(uint8_t drive)
 {
 	clear();
 	set_font(&font_6x8);
@@ -18,6 +18,7 @@ void _start(void)
 
 	// Video test
 	printf("Installer is loaded!\n");
+	printf("drive: 0x%02X\n", drive);
 
 	while(1)
 		;;

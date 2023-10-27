@@ -18,12 +18,12 @@ entry:
 .next:
 	; Save the drive id
 	xor  	ah,			ah
-	mov  	[diskID],	ax
+	mov  	[driveID],	al
 	; Print stuff...
 	print	s_hello							; Print greetings
 	; Setup FS
 	print   s_setup_FS
-	mov  	al,			[diskID]
+	mov  	al,			[driveID]
 	clc
 	call  	fs_init
 	jc  	failure
@@ -65,9 +65,9 @@ pmode:
 	mov 	ss, 		ax 
 	mov  	ebp,		0x90000
 	mov  	esp,		ebp
+
+	mov 	al, 		[driveID]
 	jmp  	CODE_SEG:KERNEL_LOCATION
-	cli
-	hlt
 
 section .text
 [bits 16]
@@ -95,6 +95,4 @@ KERNEL_LOCATION equ 0x9000
 
 section .bss
 
-diskID: resb 1
-row: resb 1
-col: resb 1
+driveID: resb 1

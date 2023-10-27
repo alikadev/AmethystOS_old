@@ -21,9 +21,9 @@ OFF_BYTPERSEC equ 11
 ; IN   AL  The drive id
 ; OUT  CF  Set if failure
 fs_init:
-	mov  	dl,			al 				; DL must contains Disk ID
+	mov   	[diskID],	al
 	xor  	dh,			dh				; Clear DL
-	mov 	[diskID], 	dl
+	mov 	dl,  		al
 	; Reset disk
 	call 	disk_reset
 	jc   	error.reset_failure
