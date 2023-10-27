@@ -90,7 +90,7 @@ s_enable_a20line: db "Enable A20 line", 0xA, 0
 s_setup_pmode_success: db "System is now in protected mode!", 0xA, 0
 s_jump_kernel: db "Executing the kernel", 0xA, 0
 s_failure: db "Failure in finding file", 0xA, 0
-kernel_file: db "KERN0   BIN"
+kernel_file: db "INSTALL BIN"
 KERNEL_LOCATION equ 0x9000
 
 section .bss

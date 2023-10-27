@@ -17,11 +17,13 @@ MAKEFLAGS += --no-print-directory
 D_SRC 				:=	src
 D_SRC_BOOT_S1		:=	$(D_SRC)/bootloader/stage1
 D_SRC_BOOT_S2		:=	$(D_SRC)/bootloader/stage2
+D_SRC_INSTALLER		:=	$(D_SRC)/installer
 D_SRC_KERNEL0		:=	$(D_SRC)/kernel
 
 D_BUILD				:=	build
 D_BUILD_BOOT_S1		:=	$(D_BUILD)/boots1
 D_BUILD_BOOT_S2		:=	$(D_BUILD)/boots2
+D_BUILD_INSTALLER	:=	$(D_BUILD)/installer
 D_BUILD_KERNEL0		:=	$(D_BUILD)/kernel0
 
 #
@@ -36,6 +38,7 @@ MCOPY		?=	mcopy
 # 
 BOOT_S1		:=	$(D_BUILD)/boots1.bin
 BOOT_S2		:=	$(D_BUILD)/boots2.bin
+INSTALLER	:=	$(D_BUILD)/install.bin
 KERNEL0 	:=	$(D_BUILD)/kernel0.bin
 IMAGE_OUT	:= 	AmethystOS.img
 
@@ -52,6 +55,7 @@ LDFLAGS		?=	-T $(LINKER)
 
 all: always clean image
 bootloader:	always $(BOOT_S1) $(BOOT_S2)
+installer: always $(INSTALLER)
 kernel0: always $(KERNEL0)
 image: always $(IMAGE_OUT)
 clean: 
@@ -72,6 +76,12 @@ $(BOOT_S2) : $(D_SRC_BOOT_S2)
 	@echo
 
 #
+# INSTALLER BINARY
+$(INSTALLER) : $(D_SRC_INSTALLER)
+	@$(MAKE) -C $< all D_BUILD=$(abspath $(D_BUILD_INSTALLER)) OUT=$(abspath $(INSTALLER))
+	@echo
+
+#
 # KENREL FILE N°0
 $(KERNEL0) : $(D_SRC_KERNEL0)
 	@$(MAKE) -C $< all D_BUILD=$(abspath $(D_BUILD_KERNEL0)) OUT=$(abspath $(KERNEL0))
@@ -79,7 +89,7 @@ $(KERNEL0) : $(D_SRC_KERNEL0)
 
 #
 # OUTPUT
-$(IMAGE_OUT) : bootloader kernel0
+$(IMAGE_OUT) : bootloader installer kernel0
 	@printf "Burnable Image\n"
 	@printf "\e[1;32m  Creating\e[0m output image\n"
 	@$(DD) if=/dev/zero of=$(IMAGE_OUT) bs=512 count=2880 status=none
@@ -88,8 +98,9 @@ $(IMAGE_OUT) : bootloader kernel0
 	@printf "\e[1;32m  Writing\e[0m boot sector\n"
 	@$(DD) if=$(BOOT_S1) of=$(IMAGE_OUT) conv=notrunc status=none
 	@printf "\e[1;32m  Copying\e[0m boots2.bin\n"
-	@$(MCOPY) -i $(IMAGE_OUT) $(BOOT_S2) "::boot.bin"
-	@$(MCOPY) -i $(IMAGE_OUT) $(KERNEL0) "::kern0.bin"
+	@$(MCOPY) -i $(IMAGE_OUT) $(BOOT_S2)   "::boot.bin"
+	@$(MCOPY) -i $(IMAGE_OUT) $(INSTALLER) "::install.bin"
+	@$(MCOPY) -i $(IMAGE_OUT) $(KERNEL0)   "::kern0.bin"
 
 install: $(DISK)
 	sudo dd if=$(IMAGE_OUT) of=$(DISK) bs=512
