@@ -45,24 +45,32 @@ void _start(void)
 	for (int i = 0; i < pciDeviceCount; ++i)
 	{
 		uint32_t vendorID, deviceID, class, subclass, progIf;
-		vendorID = pci_read(pciDevices[i], PCI_VENDOR_ID);
-		deviceID = pci_read(pciDevices[i], PCI_DEVICE_ID);
-		class    = pci_read(pciDevices[i], PCI_CLASS);
-		subclass = pci_read(pciDevices[i], PCI_SUBCLASS);
-		progIf   = pci_read(pciDevices[i], PCI_PROG_IF);
+		pci_device_t device = pciDevices[i];
+		vendorID = pci_read(device, PCI_VENDOR_ID);
+		deviceID = pci_read(device, PCI_DEVICE_ID);
+		class    = pci_read(device, PCI_CLASS);
+		subclass = pci_read(device, PCI_SUBCLASS);
+		progIf   = pci_read(device, PCI_PROG_IF);
 
-		printf("Vendor:%x, Device:%x ",
-				vendorID, deviceID);
+		printf("Vendor:%04X, Device:%04X, ",
+				vendorID, deviceID, class, subclass);
 		if (class == 0xC && subclass == 0x3)
 		{
-			if (progIf == 0x0) printf("is UHCI");
-			else if (progIf == 0x10) printf("is OHCI");
-			else if (progIf == 0x20) printf("is EHCI");
-			else if (progIf == 0x30) printf("is XHCI");
-			else printf("is unknown USB controller");
-		}
+			uint32_t bar0;
+			bar0 = pci_read(device, PCI_BAR0);
+			if (progIf == 0x20)
+			{
+				printf("EHCI:%08X\n", bar0);
+			}
+			else if (progIf == 0x30)
+			{
+				uint32_t bar1;
+				bar1 = pci_read(device, PCI_BAR1);
 
-		putchar('\n');
+				printf("XHCI:%08X.%08X\n", bar1, bar0);
+			}
+		} 
+		else printf("Cl: %02X-%02X\n", class, subclass);
 	}
 	
 	while(1)

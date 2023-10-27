@@ -8,7 +8,7 @@ _AmethystOS_ will not be the next _Linux_, neither the next _DOS_... I don't thi
 
 # _OS_ main parts
 
-This _OS_ contains 2 main parts, the _Bootloader_ and the _Kernel_. The _userspace_ will be in the _Kernel_ because I want it like this.
+This _OS_ contains 3 main parts, the _Bootloader_, the _Installer_ and the _Kernel_. The _userspace_ will be in the _Kernel_ because it is not a commercial _OS_.
 
 ## The _Bootloader_
 
@@ -16,11 +16,15 @@ The bootloader is separated in 2 part, the _First Stage_ and the _Second Stage_.
 
 The _First Stage_ is the one on the bootloader. It is used to load and run the second stage of the bootloader from the disk. It also contains the filesystem header (`FAT12`).
 
-The _Second Stage_ is the one in the filesystem root directory. The file is named `boot.bin`. Its job is to load the kernel, setup the `CPU` (`GDT`, `32bit Protected Mode`), setup the stack and run the kernel.
+The _Second Stage_ is the one in the filesystem root directory. The file is named `boot.bin`. Its job is to load the kernel, setup the `CPU` (`GDT`, `32bit Protected Mode`), setup the stack and run the _installer_ or the _kernel_.
+
+## The _Installer_
+
+The _installer_ is only present in the installation device (`USB-Stick`, `floppy`, ...). It is used to install the `OS`. The _Bootloader_ is partaged between the _installer_ and the _kernel_. This cause the OS to not have to reboot after installation.
 
 ## The _Kernel_
 
-The current _kernel_ job is really simple, test the _kernel_. There is a shell that is currently in developpement but it may take some time to be useful. 
+The _kernel_ initialize all the drivers and load the `kernel-shell`.
 
 The _userspace_ is in the kernel because I don't want this `OS` to be too complex for the moment and I am still discovering a lot about `OSes`.
 
@@ -30,8 +34,8 @@ I will only try to build this _OS_ on _Linux_ and _MacOS_. If you can make it wo
 
 - `make`
 - `nasm`
-- `gcc` (x86-64 gcc or a cross-compiler)
-- `ld` (x86-64 ld or a cross-linker)
+- `gcc` (i386/x86-64 gcc or a cross-compiler)
+- `ld` (i386/x86-64 ld or a cross-linker)
 - `mkfs.fat`
 - `dd`
 - `mcopy`
@@ -73,3 +77,5 @@ sudo make install DISK=/dev/sdx
 Restart your computer, go in the boot menu and choose the device. 
 
 Do not boot in _UEFI_, __UEFI is not supported__.
+
+The installer will present you the different devices where you can install the OS. Select one and the OS will be installed, loaded and run without any reboot!
