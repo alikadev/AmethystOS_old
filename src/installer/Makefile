@@ -6,6 +6,11 @@ OUT				?=	install.bin
 
 LINKER		:=	linker.ld
 
+CODE_SEG    := 0x8
+DATA_SEG    := 0x10
+CODE16_SEG  := 0x18
+DATA16_SEG  := 0x20
+
 ASM			?=	nasm
 CC 			?=	gcc
 LD 			?=	ld
@@ -16,8 +21,15 @@ OBJ_ASM		:=	$(subst $(D_SRC), $(D_BUILD), $(SRC_ASM:%.asm=%.asm.o))
 SRC_C		:=	$(shell find $(D_SRC) -name '*.c')
 OBJ_C		:=	$(subst $(D_SRC), $(D_BUILD), $(SRC_C:%.c=%.c.o))
 
-ASMFLAGS 	:=	-f elf32
-CFLAGS	 	:=	-nolibc -ffreestanding -fno-pie -c -m32 -std=c99 -I$(D_INCLUDE) -I$(D_INCLUDE_STD)
+ASMFLAGS 	:=	-f elf32 \
+                -DCODE_SEG=$(CODE_SEG) -DDATA_SEG=$(DATA_SEG) \
+                -DCODE16_SEG=$(CODE16_SEG) -DDATA16_SEG=$(DATA16_SEG)
+
+CFLAGS	 	:=	-nolibc -ffreestanding -fno-pie -c -m32 -std=c99 \
+                -I$(D_INCLUDE) -I$(D_INCLUDE_STD) \
+                -DCODE_SEG=$(CODE_SEG) -DDATA_SEG=$(DATA_SEG) \
+                -DCODE16_SEG=$(CODE16_SEG) -DDATA16_SEG=$(DATA16_SEG)
+
 LDFLAGS		:=	-T $(LINKER)
 
 .PHONY: all clean
