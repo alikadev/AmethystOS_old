@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 
 uint32_t strlen(const char *str)
 {
@@ -32,4 +33,16 @@ int strcmp(const char *s1, const char *s2)
 	if (*s2 == 0)
 		return 0;
 	return -1;
+}
+
+void *memcpy(void* dest, const void* src, size_t count)
+{
+	if (dest == 0)
+		dest = malloc(count);
+	for (int i = 0; i < count; ++i)
+	{
+		*(uint8_t *)(dest + i) = *(uint8_t *)(src + i);
+	}
+
+	return dest;
 }

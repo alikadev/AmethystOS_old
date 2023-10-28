@@ -11,6 +11,11 @@ void outb(uint16_t port, uint8_t val);
 void outw(uint16_t port, uint16_t val);
 void outl(uint16_t portid, uint32_t value);
 
+int disk_read(uint8_t drive, 
+              void *ptr, 
+              uint16_t count, 
+              uint64_t lba);
+
 void halt(void);
 
 #endif //__SYS__IO_H_
