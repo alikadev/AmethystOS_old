@@ -22,4 +22,7 @@ int disk_read_int13(uint8_t drive, uint16_t count,
                     uint16_t offset, uint16_t segment, 
                     uint32_t lbalo, uint32_t lbahi);
 
+uint8_t disk_get_param_int13(uint8_t drive, 
+        uint16_t *sector_per_track, uint16_t *head_count);
+
 #endif
