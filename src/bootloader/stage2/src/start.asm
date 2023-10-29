@@ -63,7 +63,7 @@ pmode:
 	mov 	fs, 		ax 
 	mov 	gs, 		ax 
 	mov 	ss, 		ax 
-	mov  	ebp,		0x90000
+	mov  	ebp,		0x8FFF
 	mov  	esp,		ebp
 
 	mov 	al, 		[driveID]
