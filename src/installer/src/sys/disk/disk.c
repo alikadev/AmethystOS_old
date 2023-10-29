@@ -44,12 +44,6 @@ static disk_t *disk_create(uint8_t drive)
 	disk->id = drive;
 	disk->type = FS_UNKNOWN;
 
-	__asm__("push %eax");
-	__asm__("mov %eax, %ebx");
-	__asm__("mov %eax, %ebx");
-	__asm__("mov %eax, %ebx");
-	__asm__("pop %eax");
-
 	// Read the disk header (info should be there)
 	disk_read(disk->id, data.buffer, 1, 0);
 
@@ -108,6 +102,5 @@ static int disk_read(uint8_t drive,
 
     memcpy(ptr, __BUFFER, lastPageCount * __BUFFER_SIZE);
 
-    return 0xFF00FF00;
-        
+    return 0;       
 }
