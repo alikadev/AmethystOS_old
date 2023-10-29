@@ -46,3 +46,27 @@ void *memcpy(void* dest, const void* src, size_t count)
 
 	return dest;
 }
+
+char *strchr(const char *p, int ch)
+{
+	char c = ch;
+
+	for (;; ++p) 
+	{
+		if (*p == c)
+			return ((char *)p);
+		
+		if (!*p)
+			return NULL;
+	}
+}
+
+char* strcpy(char* dest, const char* src)
+{
+	while (*src)
+	{
+		*dest++ = *src++;
+	}
+
+	return dest;
+}
