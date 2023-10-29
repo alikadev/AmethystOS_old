@@ -26,10 +26,10 @@ disk_read_int13:
 	mov [dap.segment], ax
 
 	mov eax, [ebp + 24]
-	mov [dap.lba + 4], eax
+	mov [dap.lba], eax
 
 	mov eax, [ebp + 28]
-	mov [dap.lba], eax
+	mov [dap.lba + 4], eax
 
 	; Exit protected mode
 	real_mode last_esp
