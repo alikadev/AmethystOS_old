@@ -22,8 +22,9 @@ void _start(uint8_t drive)
 	//printf("Drive: 0x%02X\n", drive);
 
 	disk = disk_open(drive);
-
 	printf("Disk: %p\n", disk);
+
+	disk_get_root_dir(disk);
 
 	disk_close(disk);
 

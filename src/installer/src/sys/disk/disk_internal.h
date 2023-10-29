@@ -15,7 +15,7 @@ extern int BUFFER;
 
 static disk_t *disk_create(uint8_t drive);
 
-static int disk_read(uint8_t drive, void *ptr, 
+int disk_read(uint8_t drive, void *ptr, 
                      uint16_t count, uint64_t lba);
 
 int disk_read_int13(uint8_t drive, uint16_t count, 

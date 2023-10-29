@@ -2,6 +2,8 @@
 #include <sys/fs/fat12.h>
 #include "../disk_internal.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 void disk_create_fat12(
@@ -32,4 +34,46 @@ void disk_create_fat12(
 	// (!!!NEED TO CHANGE IT LATER!!!)
 	*header->fs_type = 0;
 	strcpy(disk->info.fat12.volume_label, header->volume_label);
+}
+
+int fat12_get_root_dir(disk_t *disk)
+{
+	char buffer[12] = {0};
+	uint16_t lba, size;
+	fat12_dir *dirs;
+	int status;
+
+	if (disk == NULL || disk->type != FS_FAT12)
+		return 0x100;
+
+	size = 32 * disk->info.fat12.max_root_entry_count 
+			/ disk->info.fat12.bytes_per_sector;
+
+	lba = disk->info.fat12.sector_per_fat 
+			* disk->info.fat12.fat_count 
+			+ disk->info.fat12.reserved_sector_count;
+
+	// Reserve the directories buffer
+	dirs = (fat12_dir *)malloc(size * disk->info.fat12.bytes_per_sector);
+	if (!dirs) return 0x101;
+
+	// Read the directories
+	status = disk_read(disk->id, dirs, 1, lba);
+	if (status != 0) 
+		return status;
+
+	while (dirs->filename[0] != 0)
+	{
+		if(dirs->filename[0] == 0xE5)
+			continue;
+
+		memcpy(buffer, dirs->filename, 11);
+		printf("%s\n", buffer);
+
+		dirs ++;
+	}
+	
+	free(dirs);
+
+	return 0;
 }
