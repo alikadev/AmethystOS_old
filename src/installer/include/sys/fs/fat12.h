@@ -45,9 +45,38 @@ struct fs_fat12_header
 	char fs_type[8];
 } __attribute__((packed));
 
+typedef struct 
+{
+	char filename[8];
+	char extension[3];
+	union 
+	{
+		uint8_t bits;
+		struct {
+			uint8_t read_only : 1;
+			uint8_t hidden : 1;
+			uint8_t system : 1;
+			uint8_t volume_label : 1;
+			uint8_t subdirectory : 1;
+			uint8_t archive : 1;
+			uint8_t unused : 2;
+		} __attribute__((packed));
+	} attributes;
+	uint16_t res;
+	uint16_t creation_time;
+	uint16_t creation_date;
+	uint16_t last_access_date;
+	uint16_t ign;
+	uint16_t last_write_time;
+	uint16_t last_write_date;
+	uint16_t first_logical_cluster;
+	uint32_t size;
+} __attribute__((packed)) fat12_dir;
 
 void disk_create_fat12(
 	disk_t *disk, 
 	struct fs_fat12_header *header);
+
+int fat12_get_root_dir(disk_t *disk);
 
 #endif
