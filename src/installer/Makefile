@@ -23,7 +23,8 @@ OBJ_C		:=	$(subst $(D_SRC), $(D_BUILD), $(SRC_C:%.c=%.c.o))
 
 ASMFLAGS 	:=	-f elf32 \
                 -DCODE_SEG=$(CODE_SEG) -DDATA_SEG=$(DATA_SEG) \
-                -DCODE16_SEG=$(CODE16_SEG) -DDATA16_SEG=$(DATA16_SEG)
+                -DCODE16_SEG=$(CODE16_SEG) -DDATA16_SEG=$(DATA16_SEG) \
+                -I$(D_INCLUDE) -I$(D_INCLUDE_STD)
 
 CFLAGS	 	:=	-nolibc -ffreestanding -fno-pie -c -m32 -std=c99 \
                 -I$(D_INCLUDE) -I$(D_INCLUDE_STD) \

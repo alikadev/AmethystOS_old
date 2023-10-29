@@ -1,5 +1,5 @@
-#ifndef __SYS__IO_INTERNAL_H_
-#define __SYS__IO_INTERNAL_H_
+#ifndef __SYS__DISK_INTERNAL_H_
+#define __SYS__DISK_INTERNAL_H_
 
 #include <stdint.h>
 
@@ -13,6 +13,10 @@ extern int BUFFER;
 #define HEAD_PER_CYLINDER
 #define SECTOR_PER_TRACK
 
+static disk_t *disk_create(uint8_t drive);
+
+static int disk_read(uint8_t drive, void *ptr, 
+                     uint16_t count, uint64_t lba);
 
 int disk_read_int13(uint8_t drive, uint16_t count, 
                     uint16_t offset, uint16_t segment, 
