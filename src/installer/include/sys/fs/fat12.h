@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+typedef struct dir_s dir_t;
 typedef struct disk_s disk_t;
 
 struct fs_fat12
@@ -71,12 +72,14 @@ typedef struct
 	uint16_t last_write_date;
 	uint16_t first_logical_cluster;
 	uint32_t size;
-} __attribute__((packed)) fat12_dir;
+} __attribute__((packed)) fat12_entry;
 
 void disk_create_fat12(
 	disk_t *disk, 
 	struct fs_fat12_header *header);
 
 int fat12_get_root_dir(disk_t *disk);
+dir_t *fat12_dir_open(disk_t *disk, dir_t *dir, const char *dirname);
+void fat12_dir_close(dir_t *dir);
 
 #endif
