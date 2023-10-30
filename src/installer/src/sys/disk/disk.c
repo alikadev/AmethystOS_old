@@ -25,27 +25,6 @@ void disk_close(disk_t *disk)
 	free(disk);
 }
 
-void disk_get_root_dir(disk_t *disk)
-{
-	uint16_t lba, size;
-	uint8_t *buffer;
-	int status;
-
-	if (disk == NULL || disk->type == FS_UNKNOWN)
-		return;
-
-	// Compute the size of the root directoy
-	switch (disk->type)
-	{
-	case FS_FAT12:
-		fat12_get_root_dir(disk);
-		break;
-	default:
-		printf("ERR: disk_get_root_dir does not support FS 0x%X", disk->type);
-		return;
-	}
-}
-
 static disk_t *disk_create(uint8_t drive)
 {
 	disk_t *disk;

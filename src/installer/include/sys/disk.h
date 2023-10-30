@@ -23,6 +23,5 @@ typedef struct disk_s
 
 disk_t *disk_open(uint8_t drive);
 void disk_close(disk_t *disk);
-void disk_get_root_dir(disk_t *disk);
 
 #endif
