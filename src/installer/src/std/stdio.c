@@ -76,5 +76,3 @@ void puts(const char *s)
 		putchar(*s++);
 	}
 }
-
-uint8_t oldkey = 0;
