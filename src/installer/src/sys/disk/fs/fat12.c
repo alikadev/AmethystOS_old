@@ -24,7 +24,8 @@ static void fat12_fatfilename_to_filename(char *dest, const char *src)
 	it = src + FAT12_DIRENT_NAME_LEN;
 
 	// Add the point
-	*dest++ = '.';
+	if (*it != ' ')
+		*dest++ = '.';
 
 	// Copy the extension
 	for (int i = 0; i < FAT12_DIRENT_EXT_LEN; ++i)
@@ -33,23 +34,6 @@ static void fat12_fatfilename_to_filename(char *dest, const char *src)
 			break;
 		*dest++ = *it++;
 	}
-
-	// Add the zero (because asciz)
-	*dest = '\0';
-}
-
-static void fat12_fatdirname_to_dirname(char *dest, const char *src)
-{
-	const char *it = src;
-
-	// Copy the name
-	for (int i = 0; i < FAT12_DIRENT_NAME_LEN + FAT12_DIRENT_EXT_LEN; ++i)
-	{
-		if (*it == ' ')
-			break;
-		*dest++ = *it++;
-	}
-	it = src + FAT12_DIRENT_NAME_LEN;
 
 	// Add the zero (because asciz)
 	*dest = '\0';
@@ -89,17 +73,13 @@ static void fat12_create_dir_entry(
 		fat12_entry *fat12_entry, 
 		dir_entry_t *entry)
 {
-	if (fat12_entry->attributes.subdirectory)
-		fat12_fatdirname_to_dirname(entry->name, fat12_entry->filename);
-	else
-		fat12_fatfilename_to_filename(entry->name, fat12_entry->filename);
+	fat12_fatfilename_to_filename(entry->name, fat12_entry->filename);
 	if (fat12_entry->attributes.subdirectory)
 		entry->type = DIRENT_DIR;
 	else
 		entry->type = DIRENT_FILE;
 }
 
-// int fat12_get_root_dir(disk_t *disk)
 dir_t *fat12_dir_open(disk_t *disk, dir_t *dir, const char *dirname)
 {
 	char buffer[12] = {0};
