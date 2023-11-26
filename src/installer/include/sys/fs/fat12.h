@@ -79,7 +79,7 @@ void disk_create_fat12(
 	struct fs_fat12_header *header);
 
 int fat12_get_root_dir(disk_t *disk);
-dir_t *fat12_dir_open(disk_t *disk, dir_t *dir, const char *dirname);
+dir_t *fat12_dir_open(const disk_t *disk, dir_t *dir, const char *dirname);
 void fat12_dir_close(dir_t *dir);
 
 #endif

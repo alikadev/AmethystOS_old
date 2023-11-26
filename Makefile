@@ -101,7 +101,8 @@ $(IMAGE_OUT) : bootloader installer kernel0
 	@$(MCOPY) -i $(IMAGE_OUT) $(BOOT_S2)   "::boot.bin"
 	@$(MCOPY) -i $(IMAGE_OUT) $(INSTALLER) "::install.bin"
 	@$(MCOPY) -i $(IMAGE_OUT) $(KERNEL0)   "::kern0.bin"
-
+	@$(MCOPY) -i $(IMAGE_OUT) test         "::test"
+	@$(MCOPY) -i $(IMAGE_OUT) test/test    "::test/test"
 install: $(DISK)
 	sudo dd if=$(IMAGE_OUT) of=$(DISK) bs=512
 

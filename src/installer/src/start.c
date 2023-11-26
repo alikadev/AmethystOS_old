@@ -23,7 +23,8 @@ void _start(uint8_t drive)
 	disk = disk_open(drive);
 
 	// Open the root directory
-	dir_t *dir = dir_open(disk, NULL);
+	dir_t *dir = dir_open(disk, "/test/test");
+	if (!dir) goto nodir;
 
 	// Read the entries
 	for (int i = 0; i < dir->entry_count; i++)
@@ -33,6 +34,7 @@ void _start(uint8_t drive)
 
 	// Close everything
 	dir_close(dir);
+nodir:
 	disk_close(disk);
 
 
