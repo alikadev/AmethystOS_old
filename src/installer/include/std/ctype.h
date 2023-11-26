@@ -3,5 +3,6 @@
 
 int isspace(int c);
 int isdigit(int c);
+int toupper(int c);
 
 #endif

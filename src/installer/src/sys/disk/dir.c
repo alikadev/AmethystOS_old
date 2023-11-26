@@ -8,14 +8,6 @@ dir_t *dir_open(disk_t *disk, const char *dirname)
 {
 	dir_t *dir;
 
-	// Check arguments
-	// Sub-directories are not supported yet, 
-	if (dirname != NULL)
-	{
-		printf("ERR: Sub-directories are not supported yet. Use NULL in dirname to read root directory");
-		return NULL;
-	}
-
 	dir = malloc(sizeof *dir);
 	if (!dir) return NULL;
 
