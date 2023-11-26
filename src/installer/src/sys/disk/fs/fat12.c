@@ -49,6 +49,7 @@ static void fat12_regularfilename_to_filename(
 	{
 		*dest++ = toupper(*src++);
 	}
+	*dest = 0;
 }
 
 
@@ -231,7 +232,7 @@ static uint64_t fat12_cluster_to_lba(
  * @return        FAT12_SUCCESS or the error
  */
 static fat12_error fat12_read_entry(
-	fat12_entry **pOutput,
+	void **pOutput,
 	const disk_t *disk,
 	const void *fats,
 	const fat12_cluster start)
@@ -293,6 +294,8 @@ static char *fat12_filename_tokenize(
 	// Get to the next '/' or the end of the filename
 	while(*filename != '/' && *filename)
 		filename++;
+
+	if (!*(filename)) return NULL;
 
 	*filename = 0;
 
@@ -381,7 +384,7 @@ static fat12_error fat12_get_entry_of_filename(
 			goto fat12_find_failure;
 
 		// Check if it's the last one
-		if (!*next)
+		if (!next)
 			break;
 
 		current = next;
@@ -395,7 +398,7 @@ static fat12_error fat12_get_entry_of_filename(
 
 		cluster = it->first_logical_cluster & 0xFFF;
 		free(entries);
-		status = fat12_read_entry(&entries, disk, fats, cluster);
+		status = fat12_read_entry((void**)&entries, disk, fats, cluster);
 		if (status != FAT12_SUCCESS)
 			goto fat12_read_failure;
 	}
@@ -450,13 +453,57 @@ static fat12_error fat12_read_directory(
 		return FAT12_NOT_DIRECTORY;
 
 	// Read the final entry
-	status = fat12_read_entry(pEntry, disk, fats, entry->first_logical_cluster & 0xFFF);
+	status = fat12_read_entry((void**)pEntry, disk, fats, entry->first_logical_cluster & 0xFFF);
 
 	free(fats);
 
 	if (status != FAT12_SUCCESS) return status;
 
 	return FAT12_SUCCESS;
+}
+
+
+void *fat12_file_read(
+	const disk_t *disk, 
+	const char *filename)
+{
+	fat12_error status;
+	char aFilename[512];
+	fat12_entry *entry;
+	void *buffer;
+	void *fats;
+
+	// Check the arguments
+	if (!disk || !filename) return NULL;
+
+	// Transform the filename into usable filename
+	fat12_regularfilename_to_filename(aFilename, filename);
+
+	// Read the fats
+	fats = fat12_read_fats(disk);
+	if (!fats) 
+		return NULL;
+
+	// Read the entry
+	status = fat12_get_entry_of_filename(
+		&entry,
+		disk,
+		fats,
+		aFilename);
+
+	if (status != FAT12_SUCCESS)
+		return NULL;
+
+	if (entry->attributes.subdirectory)
+		return NULL;
+
+	// Read the final entry
+	status = fat12_read_entry(&buffer, disk, fats, entry->first_logical_cluster & 0xFFF);
+
+	free(fats);
+
+	if (status != FAT12_SUCCESS) return NULL;
+	return buffer;
 }
 
 
