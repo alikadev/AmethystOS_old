@@ -4,6 +4,7 @@
 #include <sys/font.h>
 #include <sys/disk.h>
 #include <sys/dir.h>
+#include <sys/file.h>
 
 #define HEAP_START ((void*)0x1000000)
 #define HEAP_SIZE  ((size_t)0x1000000)
@@ -21,21 +22,24 @@ void _start(uint8_t drive)
 	
 	// Open the disk
 	disk = disk_open(drive);
-
-	// Open the root directory
-	dir_t *dir = dir_open(disk, "/test/test");
-	if (!dir) goto nodir;
-
-	// Read the entries
-	for (int i = 0; i < dir->entry_count; i++)
-	{
-		printf("|- %s\n", dir->entries[i].name);
+	if (disk == NULL) {
+		printf("Fail to load the drive %d\n", drive);
+		goto nodisk;
 	}
 
-	// Close everything
-	dir_close(dir);
-nodir:
+	// Read file
+	char *file = file_read(disk, "/test/test/file.txt");
+	if (!file)
+	{
+		printf("Fail to read the file `/test/test/file.txt`\n");
+		goto nofile;
+	}
+	printf("CONTENT:\n%s\n",file);
+
+	free(file);
+nofile:
 	disk_close(disk);
+nodisk:
 
 
 	// Memory test
