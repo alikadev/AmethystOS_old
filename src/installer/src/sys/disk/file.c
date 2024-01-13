@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 void *file_read(
-	const disk_t *disk, 
+	const disk_t *disk,
 	const char *filename)
 {
 	if (!disk || !filename) return NULL;
@@ -14,7 +14,7 @@ void *file_read(
 	case FS_FAT12:
 		return fat12_file_read(disk, filename);
 	default:
-		printf("ERR: In dir_open, fs 0x%X is not supported\n", disk->type);
+		_err = _ERR_UNKNFS;
 		return NULL;
 	}
 }

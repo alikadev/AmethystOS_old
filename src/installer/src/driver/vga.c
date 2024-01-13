@@ -1,5 +1,6 @@
 #include <driver/vga.h>
 #include <stddef.h>
+#include <sys/error.h>
 
 void vga_draw_pixel(const uint16_t x,
                     const uint16_t y,
@@ -21,6 +22,12 @@ void vga_draw_bitmap(const uint16_t x,
                      const vga_color_t bgColor,
                      const vga_color_t fgColor)
 {
+  if (bitmap == NULL)
+  {
+    _err = _ERR_INVARG;
+    return;
+  }
+
 	// Get the number of bytes from the width
 	uint16_t widthByteCount = w / 8;
 	if (w % 8 != 0) widthByteCount++;

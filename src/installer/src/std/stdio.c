@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/io.h>
+#include <sys/error.h>
 
 static int _curX = 0;
 static int _curY = 0;
@@ -27,7 +28,11 @@ void set_bg_color(const vga_color_t bgColor)
 void putchar(const int c)
 {
 	// Check if the font is set
-	if (_pFont == NULL) return;
+	if (_pFont == NULL)
+	{
+		_err = _ERR_NOFONT;
+		return;
+	}
 
 	// Check if the char will horizontally overflow
 	if ((_curX + 1) * _pFont->width > _VGA_WIDTH)
@@ -52,7 +57,7 @@ void putchar(const int c)
 
 	default:
 		vga_draw_bitmap(
-				_curX * _pFont->width, 
+				_curX * _pFont->width,
 				_curY * _pFont->height,
 				_pFont->width,
 				_pFont->height,

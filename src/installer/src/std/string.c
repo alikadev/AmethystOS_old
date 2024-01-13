@@ -51,11 +51,11 @@ char *strchr(const char *p, int ch)
 {
 	char c = ch;
 
-	for (;; ++p) 
+	for (;; ++p)
 	{
 		if (*p == c)
 			return ((char *)p);
-		
+
 		if (!*p)
 			return NULL;
 	}

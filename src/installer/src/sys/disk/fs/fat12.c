@@ -8,13 +8,20 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-
+#include <sys/error.h>
 
 static void fat12_clusterfilename_to_filename(
-	char *dest, 
+	char *dest,
 	const char *src)
 {
 	const char *it = src;
+
+	// Handle error
+	if (dest == NULL || src == NULL)
+	{
+		_err = _ERR_INVARG;
+		return;
+	}
 
 	// Copy the name
 	for (int i = 0; i < FAT12_DIRENT_NAME_LEN; ++i)
@@ -45,6 +52,14 @@ static void fat12_regularfilename_to_filename(
 	char *dest,
 	const char *src)
 {
+	// Handle error
+	if (dest == NULL || src == NULL)
+	{
+		_err = _ERR_INVARG;
+		return;
+	}
+
+	// Upper the string
 	while (*src)
 	{
 		*dest++ = toupper(*src++);
@@ -54,7 +69,7 @@ static void fat12_regularfilename_to_filename(
 
 
 void disk_create_fat12(
-	disk_t *disk, 
+	disk_t *disk,
 	struct fs_fat12_header *header)
 {
 	uint8_t status;
@@ -64,7 +79,10 @@ void disk_create_fat12(
 		&disk->info.fat12.sector_per_track,
 		&disk->info.fat12.head_count);
 	if (status != 0)
+	{
+		_err = _ERR_INVARG;
 		return;
+	}
 
 	// Copy the info from the header to the disk info
 	disk->info.fat12.bytes_per_sector = header->bytes_per_sector;
@@ -85,9 +103,16 @@ void disk_create_fat12(
 
 
 static void fat12_create_dir_entry(
-	const fat12_entry *fat12_entry, 
+	const fat12_entry *fat12_entry,
 	dir_entry_t *entry)
 {
+	// Handle error
+	if (fat12_entry == NULL || entry == NULL)
+	{
+		_err = _ERR_INVARG;
+		return;
+	}
+
 	fat12_clusterfilename_to_filename(entry->name, fat12_entry->filename);
 	if (fat12_entry->attributes.subdirectory)
 		entry->type = DIRENT_DIR;
@@ -106,16 +131,21 @@ static void fat12_create_dir_entry(
 static void *fat12_read_fats(
 	const disk_t *disk)
 {
-	int status;
+	// Error handling
+	if (!disk)
+	{
+		_err = _ERR_INVARG;
+		return NULL;
+	}
+
 	void *fats = malloc(
 		disk->info.fat12.bytes_per_sector
 		* disk->info.fat12.sector_per_fat
 		* disk->info.fat12.fat_count);
-
 	if (!fats) return NULL;
 
 
-	status = disk_read(disk->id, 
+	disk_read(disk->id,
 	                   fats,
 	                   disk->info.fat12.sector_per_fat
 	                     * disk->info.fat12.fat_count,
@@ -133,16 +163,24 @@ static void *fat12_read_fats(
  * @return         The next cluster. 0xFFF describe the end
  */
 static fat12_cluster fat12_next_cluster(
-	const disk_t *disk, 
-	const void *fats, 
+	const disk_t *disk,
+	const void *fats,
 	const fat12_cluster cluster)
 {
+	// Error handling
+	if (disk == NULL || fats == NULL)
+	{
+		_err = _ERR_INVARG;
+		return 0;
+	}
+
+	// Get the next cluster
 	uint32_t fat_offset = cluster + (cluster / 2); // = multiply by 1.5
 	uint32_t fat_sector = 1 + (fat_offset / disk->info.fat12.bytes_per_sector);
 	uint32_t ent_offset = fat_offset % disk->info.fat12.bytes_per_sector;
-	
+
 	int table_value = ((const char*)fats)[ent_offset];
-	
+
 	return (cluster & 1) ? table_value >> 4 : table_value & 0xfff;
 }
 
@@ -153,41 +191,43 @@ static fat12_cluster fat12_next_cluster(
  * @param  disk    The pointer to the FAT12 disk structure
  * @return         FAT12_SUCCESS or the error
  */
-static fat12_error fat12_read_root_directory(
+static void fat12_read_root_directory(
 	fat12_entry **pOutput,
 	const disk_t *disk)
 {
 	int status;
 	uint64_t rootdir_lba, rootdir_size;
 
-	if (!disk || !pOutput) return FAT12_BAD_ARGS;
+	if (!disk || !pOutput)
+	{
+		_err = _ERR_INVARG;
+		return;
+	}
 
 	// Calculate infos about the rootdir
-	rootdir_size = 32 * disk->info.fat12.max_root_entry_count 
+	rootdir_size = 32 * disk->info.fat12.max_root_entry_count
 	              / disk->info.fat12.bytes_per_sector;
 
-	rootdir_lba = disk->info.fat12.sector_per_fat 
-	               * disk->info.fat12.fat_count 
+	rootdir_lba = disk->info.fat12.sector_per_fat
+	               * disk->info.fat12.fat_count
 	               + disk->info.fat12.reserved_sector_count;
 
 	// Reserve the entries
-	(*pOutput) = (fat12_entry*) malloc(
+	*pOutput = (fat12_entry*) malloc(
 		rootdir_size * disk->info.fat12.bytes_per_sector);
-
-	if (!(*pOutput)) return FAT12_ALLOC_ERROR;
+	if (*pOutput == NULL)
+		return;
 
 	// Read the directory
 	status = disk_read(disk->id,
-	                   (*pOutput), 
-	                   rootdir_size, 
+	                   (*pOutput),
+	                   rootdir_size,
 	                   rootdir_lba*0+0x13);
 
-	if (status != 0) {
+	if (_err != _ERR_NO) {
 		free(*pOutput);
-		return FAT12_READ_ERROR;
+		return;
 	};
-
-	return FAT12_SUCCESS;
 }
 
 
@@ -201,6 +241,15 @@ static uint64_t fat12_cluster_to_lba(
 	const disk_t *disk,
 	const fat12_cluster cluster)
 {
+	// Argument checking
+	if (disk == NULL)
+	{
+		_err = _ERR_INVARG;
+		return 0;
+	}
+
+	// Calculate the LBA address
+
 	// rootDirSectors = ((rootEntryCount * 32) + (bytesPerSector - 1)) / bytesPerSector;
 	// firstDataSector = reservedSectorCount + (fatCount * fatSize) + rootDirSectors;
 	// lba = ((cluster - 2) * sectorsPerCluster) + firstDataSector;
@@ -231,7 +280,7 @@ static uint64_t fat12_cluster_to_lba(
  * @param  start  The starting cluster
  * @return        FAT12_SUCCESS or the error
  */
-static fat12_error fat12_read_entry(
+static void fat12_read_entry(
 	void **pOutput,
 	const disk_t *disk,
 	const void *fats,
@@ -247,7 +296,10 @@ static fat12_error fat12_read_entry(
 
 	// Check args
 	if (!disk || !fats || start >= 0xFF8)
-		return FAT12_BAD_ARGS;
+	{
+		_err = _ERR_INVARG;
+		return;
+	}
 
 	// Get size in cluster
 	while (current < 0xFF8)
@@ -258,6 +310,8 @@ static fat12_error fat12_read_entry(
 
 	// Reserve the memory for the entry
 	*pOutput = malloc(size * sectorPerCluster * bytesPerSector);
+	if (_err != _ERR_NO) return;
+
 	// Read the entry cluster by cluster
 	current = start;
 	while (current < 0xFF8)
@@ -267,15 +321,13 @@ static fat12_error fat12_read_entry(
 		if (status != 0)
 		{
 			free(*pOutput);
-			return FAT12_READ_ERROR;
+			_err = _ERR_IO;
+			return;
 		}
 		offset += sectorPerCluster * bytesPerSector;
 		current = fat12_next_cluster(disk, fats, current);
 		break;
 	}
-
-
-	return FAT12_SUCCESS;
 }
 
 
@@ -288,13 +340,17 @@ static char *fat12_filename_tokenize(
 	char *filename)
 {
 	// Check the argument
-	if (!filename || !*filename) 
+	if (!filename || !*filename)
+	{
+		_err = _ERR_INVARG;
 		return NULL;
+	}
 
 	// Get to the next '/' or the end of the filename
 	while(*filename != '/' && *filename)
 		filename++;
 
+	// Tokenization is finished!
 	if (!*(filename)) return NULL;
 
 	*filename = 0;
@@ -310,7 +366,7 @@ static char *fat12_filename_tokenize(
  * @param  name   The entry name (filename notation)
  * @return        FAT12_SUCCESS or the error
  */
-static fat12_error fat12_find_entry(
+static void fat12_find_entry(
 	fat12_entry **pEntry,
 	fat12_entry *dir,
 	const char *name)
@@ -320,26 +376,31 @@ static fat12_error fat12_find_entry(
 	// Check args
 	if (!pEntry || !dir || !name)
 	{
-		return FAT12_BAD_ARGS;
+		_err = _ERR_INVARG;
+		return;
 	}
 
 	// Iterate the directory
 	for (;; ++dir)
 	{
 		// Check the entry status
-		if (dir->filename[0] == 0) 
-			return FAT12_NOT_FOUND;
+		if (dir->filename[0] == 0)
+		{
+			_err = _ERR_NOTFOUND;
+			return;
+		}
 
 		if (dir->filename[0] == 0xE5) continue;
 
 		// Check the name
 		fat12_clusterfilename_to_filename(entryName, dir->filename);
+		if (_err != _ERR_NO) return;
+
 		if (strcmp(entryName, name) == 0)
 			break;
 	}
 
 	*pEntry = dir;
-	return FAT12_SUCCESS;
 }
 
 
@@ -351,7 +412,7 @@ static fat12_error fat12_find_entry(
  * @param  filename The filename
  * @return          The return status
  */
-static fat12_error fat12_get_entry_of_filename(
+static void fat12_get_entry_of_filename(
 	fat12_entry **pEntry,
 	const disk_t *disk,
 	const void *fats,
@@ -360,28 +421,34 @@ static fat12_error fat12_get_entry_of_filename(
 	fat12_entry *entries;
 	fat12_entry *it;
 	char *next, *current;
-	fat12_error status;
 	fat12_cluster cluster;
 
 	// Check args
 	if (!pEntry || !disk || !filename)
-		return FAT12_BAD_ARGS;
+	{
+		_err = _ERR_INVARG;
+		return;
+	}
 
 	// Read the root directory (initial directory)
 	if (*filename == '/') filename++;
-	status = fat12_read_root_directory(&entries, disk);
-	if (status != FAT12_SUCCESS) 
-		return FAT12_READ_ERROR;
+	fat12_read_root_directory(&entries, disk);
+	if (_err != _ERR_NO)
+		return;
 
 	// Iterate entries
 	current = filename;
 	while (1)
 	{
 		next = fat12_filename_tokenize(current);
+		if (_err != _ERR_NO) return;
 		// Find the entry
-		status = fat12_find_entry(&it, entries, current);
-		if (status != FAT12_SUCCESS) 
+		fat12_find_entry(&it, entries, current);
+		if (_err != _ERR_NO)
+		{
+			_err = _ERR_NOTFOUND;
 			goto fat12_find_failure;
+		}
 
 		// Check if it's the last one
 		if (!next)
@@ -392,26 +459,25 @@ static fat12_error fat12_get_entry_of_filename(
 		// Check the entry
 		if (!it->attributes.subdirectory)
 		{
-			status = FAT12_NOT_DIRECTORY;
+			_err = _ERR_NOTADIR;
 			goto fat12_find_failure;
 		}
 
 		cluster = it->first_logical_cluster & 0xFFF;
 		free(entries);
-		status = fat12_read_entry((void**)&entries, disk, fats, cluster);
-		if (status != FAT12_SUCCESS)
+		fat12_read_entry((void**)&entries, disk, fats, cluster);
+		if (_err != _ERR_NO)
 			goto fat12_read_failure;
 	}
 
 	free(entries);
 	*pEntry = it;
-	return FAT12_SUCCESS;
+	return;
 
 
 fat12_find_failure:
 	free(entries);
 fat12_read_failure:
-	return status;
 }
 
 
@@ -421,12 +487,11 @@ fat12_read_failure:
  * @param  dirname The directory name
  * @return         The entries
  */
-static fat12_error fat12_read_directory(
+static void fat12_read_directory(
 	fat12_entry **pEntry,
-	const disk_t *disk, 
+	const disk_t *disk,
 	const char *dirname)
 {
-	fat12_error status;
 	char buffer[512];
 	fat12_entry *entry;
 	void *fats;
@@ -436,74 +501,80 @@ static fat12_error fat12_read_directory(
 
 	// Read the fats
 	fats = fat12_read_fats(disk);
-	if (!fats) 
-		return FAT12_READ_ERROR;
+	if (_err != _ERR_NO)
+		return;
 
 	// Read the entry
-	status = fat12_get_entry_of_filename(
+	fat12_get_entry_of_filename(
 		&entry,
 		disk,
 		fats,
 		buffer);
-
-	if (status != FAT12_SUCCESS)
-		return status;
+	if (_err != _ERR_NO)
+		return;
 
 	if (!entry->attributes.subdirectory)
-		return FAT12_NOT_DIRECTORY;
+	{
+		_err = _ERR_NOTADIR;
+		return;
+	}
 
 	// Read the final entry
-	status = fat12_read_entry((void**)pEntry, disk, fats, entry->first_logical_cluster & 0xFFF);
+	fat12_read_entry((void**)pEntry, disk, fats, entry->first_logical_cluster & 0xFFF);
 
 	free(fats);
-
-	if (status != FAT12_SUCCESS) return status;
-
-	return FAT12_SUCCESS;
 }
 
 
 void *fat12_file_read(
-	const disk_t *disk, 
+	const disk_t *disk,
 	const char *filename)
 {
-	fat12_error status;
 	char aFilename[512];
 	fat12_entry *entry;
 	void *buffer;
 	void *fats;
 
 	// Check the arguments
-	if (!disk || !filename) return NULL;
+	if (!disk || !filename) goto args_error;
 
 	// Transform the filename into usable filename
 	fat12_regularfilename_to_filename(aFilename, filename);
+	if (_err != _ERR_NO) goto transform_error;
 
 	// Read the fats
 	fats = fat12_read_fats(disk);
-	if (!fats) 
-		return NULL;
+	if (_err != _ERR_NO) goto fats_error;
 
 	// Read the entry
-	status = fat12_get_entry_of_filename(
+	fat12_get_entry_of_filename(
 		&entry,
 		disk,
 		fats,
 		aFilename);
+	if (_err != _ERR_NO) goto find_error;
 
-	if (status != FAT12_SUCCESS)
-		return NULL;
-
-	if (entry->attributes.subdirectory)
-		return NULL;
+	if (entry->attributes.subdirectory) goto not_a_file_error;
 
 	// Read the final entry
-	status = fat12_read_entry(&buffer, disk, fats, entry->first_logical_cluster & 0xFFF);
+	// Will set an error code if needed
+	fat12_read_entry(&buffer, disk, fats, entry->first_logical_cluster & 0xFFF);
 
 	free(fats);
 
-	if (status != FAT12_SUCCESS) return NULL;
 	return buffer;
+
+args_error:
+	_err = _ERR_INVARG;
+	goto error_finalize;
+
+find_error: // Error is already set
+fats_error: // Error is already set
+not_a_file_error: // Error is already set
+	free(fats);
+transform_error: // Error is already set
+error_finalize:
+	return NULL;
 }
 
 
@@ -515,29 +586,29 @@ void *fat12_file_read(
  * @return         The address of the directory structure or NULL
  */
 dir_t *fat12_dir_open(
-	const disk_t *disk, 
-	dir_t *dir, 
+	const disk_t *disk,
+	dir_t *dir,
 	const char *dirname)
 {
 	fat12_entry *entries, *entry;
 	int count = 0;
-	fat12_error status;
 
 	// Check args
-	if (disk == NULL 
-		|| disk->type != FS_FAT12 
+	if (disk == NULL
+		|| disk->type != FS_FAT12
 		|| dir == NULL)
 	{
+		_err = _ERR_INVARG;
 		return NULL;
 	}
 
 	// Read the entries
 	if (dirname == NULL || strcmp(dirname, "/") == 0)
-		status = fat12_read_root_directory(&entries, disk);
+		fat12_read_root_directory(&entries, disk);
 	else
-		status = fat12_read_directory(&entries, disk, dirname);
+		fat12_read_directory(&entries, disk, dirname);
 
-	if (status != FAT12_SUCCESS) 
+	if (_err != _ERR_NO)
 		return NULL;
 
 
@@ -560,7 +631,8 @@ dir_t *fat12_dir_open(
 	// Allocate the entries
 	dir->entry_count = count;
 	dir->entries = (dir_entry_t *)malloc(count * sizeof *dir->entries);
-	
+	if (_err != _ERR_NO) return NULL;
+
 	// Copy the entries
 	count = 0;
 	for (entry = entries;; ++entry)
