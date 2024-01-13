@@ -5,10 +5,10 @@
 #include <sys/disk.h>
 #include <sys/dir.h>
 #include <sys/file.h>
+#include <sys/error.h>
 
 #define HEAP_START ((void*)0x1000000)
 #define HEAP_SIZE  ((size_t)0x1000000)
-
 extern font_t font_6x8;
 
 void _start(uint8_t drive)
@@ -19,19 +19,19 @@ void _start(uint8_t drive)
 	alloc_init(HEAP_START, HEAP_SIZE);
 
 	disk_t *disk;
-	
+
 	// Open the disk
 	disk = disk_open(drive);
-	if (disk == NULL) {
-		printf("Fail to load the drive %d\n", drive);
+	if (disk == NULL || _err != _ERR_NO) {
+		printf("Err %d - %s: Fail to load the drive %d:\n", _err, _errstr(), drive);
 		goto nodisk;
 	}
 
 	// Read file
-	char *file = file_read(disk, "/test/test/file.txt");
+	char *file = file_read(disk, "/test/test/filee.txt");
 	if (!file)
 	{
-		printf("Fail to read the file `/test/test/file.txt`\n");
+		printf("Err %d - %s: Fail to read the file `/test/test/file.txt`\n", _err, _errstr());
 		goto nofile;
 	}
 	printf("CONTENT:\n%s\n",file);
@@ -41,7 +41,7 @@ nofile:
 	disk_close(disk);
 nodisk:
 
-
+	printf("Err %d - %s\n", _err, _errstr());
 	// Memory test
 	void *p = malloc(1);
 	if (p != HEAP_START)

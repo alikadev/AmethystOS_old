@@ -37,7 +37,7 @@ void dir_close(dir_t *dir)
 		fat12_dir_close(dir);
 		break;
 	default:
-		printf("WARN: Unknown FS %d\n");
+		_err = _ERR_UNKNFS;
 		break;
 	}
 

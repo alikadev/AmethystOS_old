@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/error.h>
 
 #if ALLOC_DEBUG == 1
 #define alloc_debug(a ...) printf("ALC> " a);
@@ -133,7 +134,7 @@ void alloc_init(void *start, size_t cap)
 		allocated[i].start = 0;
 	}
 
-	// Set the first chunk. This is this chunk that will be 
+	// Set the first chunk. This is this chunk that will be
 	// cut and merge to create the entire alloc-free cycle!
 	freed[0].start = start;
 	freed[0].size = cap;
@@ -152,63 +153,43 @@ void free(void *ptr)
 {
 	// Ignore if try to free NULL
 	if (ptr == NULL) {
-		alloc_debug("W:ptr is NULL\n", ptr);
+		_err = _ERR_INVARG; // The pointer w
 		return;
 	}
 
 	_chunk_t chunk;
 	if (remove_chunk_by_address(&chunk, allocated, ptr) == 0)
 	{
-		alloc_debug("W:ptr %p is not allocated\n", ptr);
+		_err = _ERR_INVARG; // The pointer wasn't allocated
 		return;
 	}
 
 	if (merge_chunk(&chunk, freed) == 0 && insert_chunk(&chunk, freed) == 0)
 	{
-		alloc_debug("W:Fail to insert the chunk!\n");
+		_err = _ERR_INTERNAL; // Internal error, fail to insert the chunk, unknown error!
 		return;
 	}
-
-	alloc_debug("I:Free %p\n", ptr);
-
-#if ALLOC_DEBUG == 2
-	for (int i = 0; i < CHUNK_QTY; ++i)
-	{
-		if (freed[i].size == 0) break;
-		printf("[%p,%X]", freed[i].start, freed[i].size);
-	}
-	printf("\n");
-#endif
 }
 
 void *malloc(size_t size)
 {
 	if (size == 0) {
-		alloc_debug("E:Try to alloc 0 Bytes\n");
+		_err = _ERR_INVARG; // Try to allcate 0 bytes
 		return NULL;
 	}
 
 	_chunk_t chunk;
 	if (remove_chunk_by_size(&chunk, freed, size) == 0)
 	{
-		alloc_debug("E:Heap is full\n");
+		_err = _ERR_HEAPFULL; // The heap is full
 		return NULL;
 	}
 
 	if (insert_chunk(&chunk, allocated) == 0)
 	{
-		alloc_debug("E:Fail to insert chunk\n");
+		_err = _ERR_INTERNAL; // There is no chunk left, too segmented
 		return NULL;
 	}
-	alloc_debug("I:Alloc %p\n", chunk.start);
 
-#if ALLOC_DEBUG == 2
-	for (int i = 0; i < CHUNK_QTY; ++i)
-	{
-		if (freed[i].size == 0) break;
-		printf("[%p,%X]", freed[i].start, freed[i].size);
-	}
-	printf("\n");
-#endif
 	return chunk.start;
 }

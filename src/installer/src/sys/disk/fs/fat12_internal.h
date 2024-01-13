@@ -6,15 +6,4 @@
 
 typedef uint16_t fat12_cluster;
 
-typedef enum 
-{
-	FAT12_SUCCESS = 0,
-	FAT12_BAD_ARGS,
-	FAT12_READ_ERROR,
-	FAT12_NOT_FOUND,
-	FAT12_NOT_FILE,
-	FAT12_NOT_DIRECTORY,
-	FAT12_ALLOC_ERROR,
-} fat12_error;
-
 #endif
