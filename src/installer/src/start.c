@@ -28,7 +28,7 @@ void _start(uint8_t drive)
 	}
 
 	// Read file
-	char *file = file_read(disk, "/test/test/filee.txt");
+	char *file = file_read(disk, "/test/test/file.txt");
 	if (!file)
 	{
 		printf("Err %d - %s: Fail to read the file `/test/test/file.txt`\n", _err, _errstr());
