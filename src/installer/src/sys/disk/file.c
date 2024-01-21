@@ -1,4 +1,5 @@
 #include <sys/file.h>
+#include <sys/error.h>
 #include <stdio.h>
 #include <stddef.h>
 
