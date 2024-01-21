@@ -1,5 +1,6 @@
 #include <sys/dir.h>
 #include <sys/fs/fat12.h>
+#include <sys/error.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
