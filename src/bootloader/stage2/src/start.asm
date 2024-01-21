@@ -58,11 +58,11 @@ flushGDT:
 pmode:
 	[bits 32]
 	mov 	ax, 		DATA_SEG
-	mov 	ds, 		ax 
-	mov 	es, 		ax 
-	mov 	fs, 		ax 
-	mov 	gs, 		ax 
-	mov 	ss, 		ax 
+	mov 	ds, 		ax
+	mov 	es, 		ax
+	mov 	fs, 		ax
+	mov 	gs, 		ax
+	mov 	ss, 		ax
 	mov  	ebp,		0x8FFF
 	mov  	esp,		ebp
 
@@ -91,7 +91,7 @@ s_setup_pmode_success: db "System is now in protected mode!", 0xA, 0
 s_jump_kernel: db "Executing the kernel", 0xA, 0
 s_failure: db "Failure in finding file", 0xA, 0
 kernel_file: db "INSTALL BIN"
-KERNEL_LOCATION equ 0x9000
+KERNEL_LOCATION equ 0xA000
 
 section .bss
 
