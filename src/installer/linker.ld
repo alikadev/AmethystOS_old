@@ -4,15 +4,13 @@ ENTRY(entry)
 
 SECTIONS
 {
-	.            = 0x00009000;
-	.entry       : { *(.entry) }
 	.            = 0x0000A000;
-	.buffer : 
-	{
-		*(.buffer)
-		BUFFER = .;
-	}
-	.        = 0x0000C000;
+	.entry       : { *(.entry) }
+	.text16      : { *(.text16) }
+	.data16      : { *(.data16) }
+	.            = 0x0000E000;
+	.buffer16    : { *(.buffer16) }
+	.            = 0x00010000;
 	.text        : { *(.text) }
 	.rodata      : { *(.rodata) }
 	.data        : { *(.data) }

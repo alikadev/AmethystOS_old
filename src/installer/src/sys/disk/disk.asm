@@ -1,5 +1,7 @@
 [bits 32]
 
+section .text16
+
 %include "sys/std.inc"
 
 global disk_read_int13
@@ -122,7 +124,7 @@ disk_get_param_int13:
 	call_end
 	xor eax, eax
 	ret
-	
+
 ; =============== ;
 ; === FAILURE === ;
 ; =============== ;
@@ -152,9 +154,14 @@ get_params_failure:
 	mov al, [status]
 	ret
 
-section .buffer
+section .buffer16
 
-last_esp: dd 0
+global buffer16
+buffer16:
+	times 1024 db 0
+
+section .data16
+
 
 align 32
 dap:
@@ -170,3 +177,5 @@ drive:    db 0
 
 head:     dw 0
 spt:      dw 0
+
+last_esp: dd 0
