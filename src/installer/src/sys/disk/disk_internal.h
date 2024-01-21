@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
-extern int BUFFER;
-#define __BUFFER ((void*)&BUFFER)
+extern int buffer16;
+#define __BUFFER ((void*)&buffer16)
 #define __BUFFER_U16 ((uint32_t)__BUFFER & 0xFFFF)
 #define __BUFFER_SIZE 0x1000
 #define __BUFFER_PG_SIZE (__BUFFER_SIZE / 512)
