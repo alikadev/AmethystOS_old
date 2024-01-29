@@ -1,5 +1,6 @@
 
 %macro real_mode 1
+	[bits 32]
 	; Stack
 	mov [%1], esp        ; Save the stack
 	mov esp,  0xFFFF     ; Set the new stack pointer
@@ -12,16 +13,19 @@
 	mov gs,   eax
 	mov ss,   eax
 
-	; Apply segments
+	; Apply segments & disable paging
+	mov eax,  cr0         ; Load CR0
+	and eax,  ~0x80000000 ; Disable paging
+	mov cr0,  eax         ; Save CR0
 	jmp CODE16_SEG:%%.goto_real_mode_cr0
 
 %%.goto_real_mode_cr0:
+	[bits 32]
 	; Exit protected mode
-	mov eax,  cr0        ; Load CR0
-	and al,   ~1         ; Exit protected mode
-	mov cr0,  eax        ; Save CR0
+	mov eax,  cr0         ; Load CR0
+	and eax,  ~0x00000001 ; Exit protected mode
+	mov cr0,  eax         ; Save CR0
 
-	[bits 16]
 	jmp 0:%%.goto_real_mode_real
 
 %%.goto_real_mode_real:
@@ -45,7 +49,7 @@
 
 	; Enter protected mode
 	mov eax, cr0         ; Load CR0
-	or  eax, 1           ; Enter protected mode
+	or  eax, 0x80000001  ; Enter protected mode
 	mov cr0, eax         ; Save protected mode
 
 	jmp CODE_SEG:%%.protected
@@ -64,11 +68,13 @@
 %endmacro
 
 %macro call_start 0 
+	[bits 32]
 	push ebp      ; save the base pointer value
 	mov  ebp, esp ; Set the new base pointer value
 %endmacro
 
 %macro call_end 0 
+	[bits 32]
 	mov esp, ebp ; Deallocate deallocate variables (if exist)
 	pop ebp      ; Restore the caller's base pointer value
 %endmacro
