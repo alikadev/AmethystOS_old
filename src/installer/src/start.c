@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/paging.h>
 #include <sys/io.h>
 #include <sys/font.h>
 #include <sys/disk.h>
@@ -7,13 +8,15 @@
 #include <sys/file.h>
 #include <sys/error.h>
 
-#define HEAP_START ((void*)0x1000000)
-#define HEAP_SIZE  ((size_t)0x1000000)
+#define HEAP_START ((void*) 0x00100000)
+#define HEAP_SIZE  ((size_t)0x000FFFFF)
 extern font_t font_6x8;
 
 void _start(uint8_t drive)
 {
 	set_font(&font_6x8);
+
+	paging_init();
 
 	// Initialize the allocator
 	alloc_init(HEAP_START, HEAP_SIZE);
@@ -41,7 +44,6 @@ nofile:
 	disk_close(disk);
 nodisk:
 
-	printf("Err %d - %s\n", _err, _errstr());
 	// Memory test
 	void *p = malloc(1);
 	if (p != HEAP_START)

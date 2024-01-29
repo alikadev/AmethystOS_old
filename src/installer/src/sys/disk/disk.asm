@@ -35,6 +35,7 @@ disk_read_int13:
 
 	; Exit protected mode
 	real_mode last_esp
+.disk_read_int13_16:
 	[bits 16]
 
 	; Reset disk controller
