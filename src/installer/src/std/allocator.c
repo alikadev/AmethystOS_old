@@ -1,13 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/error.h>
-
-#if ALLOC_DEBUG == 1
-#define alloc_debug(a ...) printf("ALC> " a);
-#else
-#define alloc_debug(...)
-#endif
-
+#define ALLOC_DEBUG 0
 // CHUNKS
 #define CHUNK_QTY 0x4000
 typedef struct
@@ -17,9 +11,40 @@ typedef struct
 } _chunk_t;
 typedef _chunk_t _chunk_list_t[CHUNK_QTY];
 
+// Debug infomations
+#if ALLOC_DEBUG == 1
+#define alloc_debug(a ...) printf("ALC> " a)
+#else
+#define alloc_debug(...)
+#define chunk_print(...)
+#endif
+
 // Used chunks
 static _chunk_list_t allocated = {0};
 static _chunk_list_t freed = {0};
+
+#if ALLOC_DEBUG == 1
+void chunk_print(void)
+{
+	for (int i = 0; i < CHUNK_QTY; ++i)
+	{
+		if (allocated[i].size != 0)
+		{
+			alloc_debug("A [0x%p,%08X]\n",
+				allocated[i].start, allocated[i].size);
+		}
+	}
+	for (int i = 0; i < CHUNK_QTY; ++i)
+	{
+		if (freed[i].size != 0)
+		{
+			alloc_debug("F [0x%p,%08X]\n",
+				freed[i].start, freed[i].size);
+		}
+	}
+	alloc_debug("=======================\n");
+}
+#endif
 
 int insert_chunk(_chunk_t *pChunk, _chunk_list_t list)
 {
@@ -169,6 +194,8 @@ void free(void *ptr)
 		_err = _ERR_INTERNAL; // Internal error, fail to insert the chunk, unknown error!
 		return;
 	}
+
+	chunk_print();
 }
 
 void *malloc(size_t size)
@@ -190,6 +217,8 @@ void *malloc(size_t size)
 		_err = _ERR_INTERNAL; // There is no chunk left, too segmented
 		return NULL;
 	}
+
+	chunk_print();
 
 	return chunk.start;
 }

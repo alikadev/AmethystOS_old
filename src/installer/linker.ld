@@ -24,10 +24,6 @@ SECTIONS
 	.text        : { *(.text) }
 	.rodata      : { *(.rodata) }
 	.data        : { *(.data) }
-
-	# APPLICATION SPACE
-	.            = 0x00100000;
-	.app_space   : { *(.app_space) }
 	.bss         : { *(.bss) }
 
 	/*
@@ -35,4 +31,10 @@ SECTIONS
 	 */
 	.           = 0x000A0000;
 	.reserved1   : { . = . + (320 * 200); }
+
+	/*
+	 * Application space
+	 */
+	.            = 0x00100000;
+	.app_space   : { *(.app_space) }
 }
